@@ -79,7 +79,7 @@ export class BlockchainService {
         const webhookData = {
             events: ['tx-confirmation', 'unconfirmed-tx'],
             address,
-            url: `https://cfd3-110-227-204-245.ngrok-free.app/webhooks/blockcypher?orderId=${orderId}`,
+            url: `https://fef0-2409-40c4-3003-b00c-bf8f-b7d2-60c0-1fae.ngrok-free.app/webhooks/blockcypher?orderId=${orderId}`,
             token: config.apiKey
         };
         console.log("🚀 ~ BlockchainService ~ registerWebhook ~ webhookData:", webhookData)
@@ -128,77 +128,100 @@ export class BlockchainService {
         }
     }
 
-    async getPaymentByAddress(address: string, currency: string): Promise<VerificationResult> {
-        const config = this.config[currency.toUpperCase()];
-        if (!config) throw new Error(`Unsupported currency: ${currency}`);
-
-        switch (currency.toUpperCase()) {
-            case 'BTC':
-            case 'LTC':
-            case 'DOGE':
-                return await this.verifyUTXOTransaction(currency, address, config);
-
-            case 'SOL':
-                return await this.verifySolanaTransaction(address, config);
-
+    async verifyOtherCryptocurrencies(currency: string, payment_address: string, orderId: string): Promise<void> {
+        switch (currency) {
             case 'USDT':
-                return await this.verifyTronTransaction(address, config);
-
+                // Add verification logic for USDT
+                console.log(`Verifying USDT address: ${payment_address} for order: ${orderId}`);
+                break;
+            case 'TRX':
+                // Add verification logic for TRX
+                console.log(`Verifying TRX address: ${payment_address} for order: ${orderId}`);
+                break;
+            case 'XMR':
+                // Add verification logic for XMR
+                console.log(`Verifying XMR address: ${payment_address} for order: ${orderId}`);
+                break;
+            case 'SOL':
+                // Add verification logic for SOL
+                console.log(`Verifying SOL address: ${payment_address} for order: ${orderId}`);
+                break;
             default:
-                throw new Error(`Verification not implemented for ${currency}`);
+                throw new Error(`Unsupported currency: ${currency}`);
         }
     }
 
-    private async verifyUTXOTransaction(currency: string, address: string, config: BlockchainConfig): Promise<VerificationResult> {
-        // This method will be triggered by the webhook, so it doesn't need to call the API directly
-        return {
-            verified: false,
-            status: 'pending',
-            message: 'Waiting for webhook notification'
-        };
-    }
+        async getPaymentByAddress(address: string, currency: string): Promise<VerificationResult> {
+            const config = this.config[currency.toUpperCase()];
+            if (!config) throw new Error(`Unsupported currency: ${currency}`);
 
-    private async verifySolanaTransaction(address: string, config: BlockchainConfig): Promise<VerificationResult> {
-        const response = await axios.get(`${config.apiUrl}/account/transactions`, {
-            params: { account: address },
-            headers: { 'Authorization': `Bearer ${config.apiKey}` }
-        });
+            switch (currency.toUpperCase()) {
+                case 'BTC':
+                case 'LTC':
+                case 'DOGE':
+                    return await this.verifyUTXOTransaction(currency, address, config);
 
-        const recentTx = response.data?.[0];
-        if (!recentTx) return { verified: false, status: 'pending' };
+                case 'SOL':
+                    return await this.verifySolanaTransaction(address, config);
 
-        return {
-            verified: recentTx.confirmations >= config.minConfirmations,
-            status: recentTx.confirmations >= config.minConfirmations ? 'completed' : 'pending',
-            txHash: recentTx.signature,
-            amount: recentTx.lamports / Math.pow(10, config.decimals),
-            confirmations: recentTx.confirmations,
-            timestamp: recentTx.blockTime * 1000,
-            explorerUrl: `${config.explorerUrl}${recentTx.signature}`
-        };
-    }
+                case 'USDT':
+                    return await this.verifyTronTransaction(address, config);
 
-    private async verifyTronTransaction(address: string, config: BlockchainConfig): Promise<VerificationResult> {
-        const response = await axios.get(`${config.apiUrl}/v1/accounts/${address}/transactions/trc20`, {
-            params: {
-                contract_address: config.usdtContract,
-                only_confirmed: true,
-                limit: 1
-            },
-            headers: { 'TRON-PRO-API-KEY': config.apiKey }
-        });
+                default:
+                    throw new Error(`Verification not implemented for ${currency}`);
+            }
+        }
 
-        const recentTx = response.data.data?.[0];
-        if (!recentTx) return { verified: false, status: 'pending' };
+        private async verifyUTXOTransaction(currency: string, address: string, config: BlockchainConfig): Promise<VerificationResult> {
+            // This method will be triggered by the webhook, so it doesn't need to call the API directly
+            return {
+                verified: false,
+                status: 'pending',
+                message: 'Waiting for webhook notification'
+            };
+        }
 
-        return {
-            verified: parseInt(recentTx.value) >= 0,
-            status: parseInt(recentTx.value) >= 0 ? 'completed' : 'pending',
-            txHash: recentTx.transaction_id,
-            amount: parseInt(recentTx.value) / Math.pow(10, config.decimals),
-            confirmations: recentTx.confirmed ? config.minConfirmations : 0,
-            timestamp: recentTx.block_timestamp,
-            explorerUrl: `${config.explorerUrl}${recentTx.transaction_id}`
-        };
-    }
+        private async verifySolanaTransaction(address: string, config: BlockchainConfig): Promise<VerificationResult> {
+            const response = await axios.get(`${config.apiUrl}/account/transactions`, {
+                params: { account: address },
+                headers: { 'Authorization': `Bearer ${config.apiKey}` }
+            });
+
+            const recentTx = response.data?.[0];
+            if (!recentTx) return { verified: false, status: 'pending' };
+
+            return {
+                verified: recentTx.confirmations >= config.minConfirmations,
+                status: recentTx.confirmations >= config.minConfirmations ? 'completed' : 'pending',
+                txHash: recentTx.signature,
+                amount: recentTx.lamports / Math.pow(10, config.decimals),
+                confirmations: recentTx.confirmations,
+                timestamp: recentTx.blockTime * 1000,
+                explorerUrl: `${config.explorerUrl}${recentTx.signature}`
+            };
+        }
+
+        private async verifyTronTransaction(address: string, config: BlockchainConfig): Promise<VerificationResult> {
+            const response = await axios.get(`${config.apiUrl}/v1/accounts/${address}/transactions/trc20`, {
+                params: {
+                    contract_address: config.usdtContract,
+                    only_confirmed: true,
+                    limit: 1
+                },
+                headers: { 'TRON-PRO-API-KEY': config.apiKey }
+            });
+
+            const recentTx = response.data.data?.[0];
+            if (!recentTx) return { verified: false, status: 'pending' };
+
+            return {
+                verified: parseInt(recentTx.value) >= 0,
+                status: parseInt(recentTx.value) >= 0 ? 'completed' : 'pending',
+                txHash: recentTx.transaction_id,
+                amount: parseInt(recentTx.value) / Math.pow(10, config.decimals),
+                confirmations: recentTx.confirmed ? config.minConfirmations : 0,
+                timestamp: recentTx.block_timestamp,
+                explorerUrl: `${config.explorerUrl}${recentTx.transaction_id}`
+            };
+        }
 }

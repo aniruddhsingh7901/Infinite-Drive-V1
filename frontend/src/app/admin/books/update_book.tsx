@@ -34,8 +34,13 @@ export default function EditBook() {
 
   useEffect(() => {
     const fetchBook = async () => {
+        const token = localStorage.getItem('token');
       try {
-        const response = await axios.get(`http://localhost:5000/books/${id}`);
+         const response = await axios.get(`http://localhost:5000/books/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
         const book = response.data;
         setFormData({
           title: book.title,
@@ -73,13 +78,16 @@ export default function EditBook() {
     if (formData.bookFiles.EPUB) {
       data.append('ebook', formData.bookFiles.EPUB);
     }
-
+   
+     
     try {
-      const response = await axios.put(`http://localhost:5000/books/${id}`, data, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+        const token = localStorage.getItem('token');
+      const response = await axios.put(`http://localhost:5000/books/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}`
+      }
+    });
       console.log('Book updated:', response.data);
       router.push('/admin/books');
     } catch (error) {

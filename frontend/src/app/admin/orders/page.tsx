@@ -128,8 +128,13 @@ export default function OrdersManagement() {
 
   useEffect(() => {
     const fetchOrders = async () => {
+      const token = localStorage.getItem('token');
       try {
-        const response = await axios.get('http://localhost:5000/orders/all-orders');
+     const response = await axios.get('http://localhost:5000/orders/all-orders', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         console.log("🚀 ~ fetchOrders ~ response:", response)
         setOrders(response.data);
       } catch (error) {

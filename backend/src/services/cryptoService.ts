@@ -7,7 +7,7 @@ export class CryptoService {
   async getPrices(fiatAmount: number, currency: string = 'usd'): Promise<{[key: string]: number}> {
     try {
       const response = await axios.get(
-        `${this.COINGECKO_API}/simple/price?ids=bitcoin,litecoin,monero,solana,dogecoin,tether&vs_currencies=${currency}`
+        `${this.COINGECKO_API}/simple/price?ids=bitcoin,litecoin,monero,solana,dogecoin,tether,tron&vs_currencies=${currency}`
       );
 
       const prices = response.data;
@@ -19,6 +19,7 @@ export class CryptoService {
       if (prices.solana) cryptoAmounts.SOL = fiatAmount / prices.solana[currency];
       if (prices.dogecoin) cryptoAmounts.DOGE = fiatAmount / prices.dogecoin[currency];
       if (prices.tether) cryptoAmounts.USDT = fiatAmount;
+      if (prices.tron) cryptoAmounts.TRX = fiatAmount / prices.tron[currency];
 
       return cryptoAmounts;
     } catch (error) {

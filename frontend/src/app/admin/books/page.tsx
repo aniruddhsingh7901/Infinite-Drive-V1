@@ -50,11 +50,16 @@ export default function BooksManagement() {
       status: book.status,
     });
   };
-
+  
   const handleDelete = async (id: string) => {
     console.log("🚀 ~ handleDelete ~ id:", id)
+     const token = localStorage.getItem('token');
     try {
-      await axios.delete(`http://localhost:5000/books/${id}`);
+     await axios.delete(`http://localhost:5000/books/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
       setBooks(books.filter(book => book.id !== id));
     } catch (error) {
       console.error('Error deleting book:', error);

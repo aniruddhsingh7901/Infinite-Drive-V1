@@ -353,6 +353,7 @@ export default function AddBook() {
 
       // Create FormData
       const data = new FormData();
+      console.log("🚀 ~ handleSubmit ~ data:", data)
       
       // Add basic info
       const bookId = `${Date.now()}-${formData.formats[0]}`;
@@ -377,10 +378,12 @@ export default function AddBook() {
       });
 
       // Make API call to backend
+      const token = localStorage.getItem('token');
       const response = await axios.post('http://localhost:5000/books/add', data, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+  headers: {
+    'Content-Type': 'multipart/form-data',
+    'Authorization': `Bearer ${token}`,
+  },
         timeout: 120000, 
         onUploadProgress: (progressEvent) => {
           const percentCompleted = progressEvent.total

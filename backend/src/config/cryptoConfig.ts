@@ -61,6 +61,19 @@ export const CRYPTO_CONFIG = {
       const amountInUnits = Math.floor(parseFloat(amount) * 1e6);
       return `tron://transfer?toAddress=${address}&amount=${amountInUnits}&token=TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t`;
     }
+  },
+  TRX: {
+    name: 'Tron',
+    symbol: 'TRX',
+    address: process.env.TRX_ADDRESS,
+    decimals: 6,
+    networkFee: '1 TRX',
+    waitTime: '1-5 minutes',
+    qrFormat: (address: string, amount: string) => {
+      const amountInUnits = Math.floor(parseFloat(amount) * 1e6);
+      return `tron://transfer?toAddress=${address}&amount=${amountInUnits}`;
+    },
+    explorerUrl: 'https://tronscan.org/#/transaction/'
   }
 };
 

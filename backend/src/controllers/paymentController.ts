@@ -32,7 +32,7 @@ interface PaymentVerificationResult {
     completedAt?: Date;
     downloadToken?: string;
 }
-
+const supportedBlockCypherCurrencies = ['BTC', 'LTC', 'DOGE'];
 export class PaymentController {
     constructor(
         private cryptoService: CryptoService = new CryptoService(),
@@ -70,7 +70,15 @@ export class PaymentController {
             });
 
             // Register webhook with BlockCypher
-            await this.blockchain.registerWebhook(payment_address, cryptocurrency, order.id);
+            // await this.blockchain.registerWebhook(payment_address, cryptocurrency, order.id);
+
+            if (supportedBlockCypherCurrencies.includes(cryptocurrency)) {
+                await this.blockchain.registerWebhook(payment_address, cryptocurrency, order.id);
+            } else {
+                // Verify other cryptocurrencies
+                await this.blockchain.verifyOtherCryptocurrencies(cryptocurrency, payment_address, order.id);
+            }
+
             orderStore.setCurrentOrderId(order.id);
             // const order_id = order.id;
         //    console.log("🚀 ~ PaymentController ~ createPayment ~ data2:", data2)

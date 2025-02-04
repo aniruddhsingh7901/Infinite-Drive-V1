@@ -108,6 +108,47 @@ export class PaymentService {
         waitTime: '10-30 minutes',
         qrFormat: (address, amount) => `dogecoin:${address}?amount=${parseFloat(amount).toFixed(8)}`,
         explorerUrl: 'https://dogechain.info/tx/'
+      },
+      TRX: {
+        name: 'Tron',
+        symbol: 'TRX',
+        address: process.env.TRX_ADDRESS || '',
+        decimals: 6,
+        minConfirmations: 1,
+        networkFee: '1 TRX',
+        waitTime: '1-5 minutes',
+        qrFormat: (address: string, amount: string): string => {
+          const amountInUnits = Math.floor(parseFloat(amount) * 1e6);
+          return `tron://transfer?toAddress=${address}&amount=${amountInUnits}`;
+        },
+        explorerUrl: 'https://tronscan.org/#/transaction/'
+      },
+      XMR: {
+        name: 'Monero',
+        symbol: 'XMR',
+        address: process.env.XMR_ADDRESS || '',
+        decimals: 12,
+        minConfirmations: 10,
+        networkFee: '0.0001 XMR',
+        waitTime: '20-30 minutes',
+        qrFormat: (address: string, amount: string): string => {
+          return `monero:${address}?tx_amount=${amount}`;
+        },
+        explorerUrl: 'https://xmrchain.net/tx/'
+      },
+      SOL: {
+        name: 'Solana',
+        symbol: 'SOL',
+        address: process.env.SOL_ADDRESS || '',
+        decimals: 9,
+        minConfirmations: 1,
+        networkFee: '0.000005 SOL',
+        waitTime: '1-2 minutes',
+        qrFormat: (address: string, amount: string): string => {
+          const amountInUnits = Math.floor(parseFloat(amount) * 1e9);
+          return `solana:${address}?amount=${amountInUnits}`;
+        },
+        explorerUrl: 'https://explorer.solana.com/tx/'
       }
       // Ot
       // Other currencies follow the same pattern
@@ -204,7 +245,9 @@ export class PaymentService {
   }
 
   async generatePaymentAddress(currency: string): Promise<string> {
+    console.log("🚀 ~ PaymentService ~ generatePaymentAddress ~ currency:", currency)
     const currencyConfig = this.supportedCurrencies[currency];
+    console.log("🚀 ~ PaymentService ~ generatePaymentAddress ~ currencyConfig:", currencyConfig)
     if (!currencyConfig?.address) {
       throw new Error('Unsupported currency or missing address');
     }

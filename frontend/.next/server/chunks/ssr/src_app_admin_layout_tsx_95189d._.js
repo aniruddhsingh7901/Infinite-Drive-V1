@@ -4,56 +4,11 @@ module.exports = {
 
 var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_import__, s: __turbopack_esm__, v: __turbopack_export_value__, n: __turbopack_export_namespace__, c: __turbopack_cache__, M: __turbopack_modules__, l: __turbopack_load__, j: __turbopack_dynamic__, P: __turbopack_resolve_absolute_path__, U: __turbopack_relative_url__, R: __turbopack_resolve_module_id_path__, b: __turbopack_worker_blob_url__, g: global, __dirname, x: __turbopack_external_require__, y: __turbopack_external_import__, m: module, e: exports, t: __turbopack_require_real__ } = __turbopack_context__;
 {
-// // 'use client';
-// // import { useState } from 'react';
-// // import Link from 'next/link';
-// // export default function AdminLayout({
-// //   children,
-// // }: {
-// //   children: React.ReactNode;
-// // }) {
-// //   const [isOpen, setIsOpen] = useState(false);
-// //   return (
-// //     <div className="flex h-screen bg-gray-100">
-// //       {/* Sidebar */}
-// //       <div className={`bg-gray-800 text-white w-64 space-y-6 py-7 px-2 absolute inset-y-0 left-0 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition duration-200 ease-in-out`}>
-// //         <nav>
-// //           <Link href="/admin" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">
-// //             Dashboard
-// //           </Link>
-// //           <Link href="/admin/books" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">
-// //             Books
-// //           </Link>
-// //           <Link href="/admin/orders" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">
-// //             Orders
-// //           </Link>
-// //           <Link href="/admin/settings" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700">
-// //             Settings
-// //           </Link>
-// //         </nav>
-// //       </div>
-// //       {/* Main Content */}
-// //       <div className="flex-1 flex flex-col overflow-hidden">
-// //         <header className="bg-white shadow">
-// //           <div className="flex items-center justify-between p-4">
-// //             <button onClick={() => setIsOpen(!isOpen)} className="md:hidden">
-// //               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-// //                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-// //               </svg>
-// //             </button>
-// //             <div>Admin Dashboard</div>
-// //           </div>
-// //         </header>
-// //         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-200 p-6">
-// //           {children}
-// //         </main>
-// //       </div>
-// //     </div>
-// //   );
-// // }
 // 'use client';
-// import { useState } from 'react';
+// import { useState, useEffect } from 'react';
+// import { useRouter } from 'next/navigation';
 // import Link from 'next/link';
+// import axios from 'axios';
 // const menuItems = [
 //   { href: '/admin', label: 'Dashboard', icon: 'dashboard' },
 //   { href: '/admin/books', label: 'Books', icon: 'book' },
@@ -65,7 +20,18 @@ var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_
 // }: {
 //   children: React.ReactNode;
 // }) {
+//   const router = useRouter();
 //   const [isSidebarOpen, setSidebarOpen] = useState(true);
+//   useEffect(() => {
+//     const token = localStorage.getItem('token');
+//     if (!token) {
+//       router.push('/admin/login');
+//     }
+//   }, [router]);
+//   const handleLogout = () => {
+//     localStorage.removeItem('token');
+//     router.push('/admin/login');
+//   };
 //   return (
 //     <div className="min-h-screen bg-gray-100">
 //       {/* Sidebar */}
@@ -120,6 +86,9 @@ var { r: __turbopack_require__, f: __turbopack_module_context__, i: __turbopack_
 //                   <span>Admin</span>
 //                 </button>
 //               </div>
+//               <button onClick={handleLogout} className="text-gray-500 hover:text-gray-700">
+//                 Logout
+//               </button>
 //             </div>
 //           </div>
 //         </header>

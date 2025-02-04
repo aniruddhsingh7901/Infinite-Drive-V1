@@ -360,6 +360,7 @@ function AddBook() {
             }
             // Create FormData
             const data = new FormData();
+            console.log("🚀 ~ handleSubmit ~ data:", data);
             // Add basic info
             const bookId = `${Date.now()}-${formData.formats[0]}`;
             data.append('id', bookId); // Add the ID to form data
@@ -380,9 +381,11 @@ function AddBook() {
                 }
             });
             // Make API call to backend
+            const token = localStorage.getItem('token');
             const response = await __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$axios$2f$lib$2f$axios$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"].post('http://localhost:5000/books/add', data, {
                 headers: {
-                    'Content-Type': 'multipart/form-data'
+                    'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${token}`
                 },
                 timeout: 120000,
                 onUploadProgress: (progressEvent)=>{
@@ -424,7 +427,7 @@ function AddBook() {
                     children: "Add New Book"
                 }, void 0, false, {
                     fileName: "[project]/src/app/admin/books/add/page.tsx",
-                    lineNumber: 423,
+                    lineNumber: 426,
                     columnNumber: 9
                 }, this),
                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -441,7 +444,7 @@ function AddBook() {
                                             children: "Title *"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                            lineNumber: 429,
+                                            lineNumber: 432,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -455,13 +458,13 @@ function AddBook() {
                                                 })
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                            lineNumber: 432,
+                                            lineNumber: 435,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                    lineNumber: 428,
+                                    lineNumber: 431,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -471,7 +474,7 @@ function AddBook() {
                                             children: "Description *"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                            lineNumber: 442,
+                                            lineNumber: 445,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("textarea", {
@@ -485,13 +488,13 @@ function AddBook() {
                                                 })
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                            lineNumber: 445,
+                                            lineNumber: 448,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                    lineNumber: 441,
+                                    lineNumber: 444,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -501,7 +504,7 @@ function AddBook() {
                                             children: "Price ($) *"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                            lineNumber: 455,
+                                            lineNumber: 458,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -517,19 +520,19 @@ function AddBook() {
                                                 })
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                            lineNumber: 458,
+                                            lineNumber: 461,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                    lineNumber: 454,
+                                    lineNumber: 457,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/admin/books/add/page.tsx",
-                            lineNumber: 427,
+                            lineNumber: 430,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -539,7 +542,7 @@ function AddBook() {
                                     children: "Available Formats *"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                    lineNumber: 472,
+                                    lineNumber: 475,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -566,25 +569,25 @@ function AddBook() {
                                                     className: "mr-2"
                                                 }, void 0, false, {
                                                     fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                                    lineNumber: 478,
+                                                    lineNumber: 481,
                                                     columnNumber: 19
                                                 }, this),
                                                 format
                                             ]
                                         }, format, true, {
                                             fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                            lineNumber: 477,
+                                            lineNumber: 480,
                                             columnNumber: 17
                                         }, this))
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                    lineNumber: 475,
+                                    lineNumber: 478,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/admin/books/add/page.tsx",
-                            lineNumber: 471,
+                            lineNumber: 474,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -597,7 +600,7 @@ function AddBook() {
                                             children: "Cover Image *"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                            lineNumber: 498,
+                                            lineNumber: 501,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -611,13 +614,13 @@ function AddBook() {
                                             className: "w-full"
                                         }, void 0, false, {
                                             fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                            lineNumber: 501,
+                                            lineNumber: 504,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                    lineNumber: 497,
+                                    lineNumber: 500,
                                     columnNumber: 13
                                 }, this),
                                 formData.formats.map((format)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -630,7 +633,7 @@ function AddBook() {
                                                 ]
                                             }, void 0, true, {
                                                 fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                                lineNumber: 515,
+                                                lineNumber: 518,
                                                 columnNumber: 17
                                             }, this),
                                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -647,19 +650,19 @@ function AddBook() {
                                                 className: "w-full"
                                             }, void 0, false, {
                                                 fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                                lineNumber: 518,
+                                                lineNumber: 521,
                                                 columnNumber: 17
                                             }, this)
                                         ]
                                     }, format, true, {
                                         fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                        lineNumber: 514,
+                                        lineNumber: 517,
                                         columnNumber: 15
                                     }, this))
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/admin/books/add/page.tsx",
-                            lineNumber: 496,
+                            lineNumber: 499,
                             columnNumber: 11
                         }, this),
                         uploadProgress > 0 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -671,12 +674,12 @@ function AddBook() {
                                 }
                             }, void 0, false, {
                                 fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                lineNumber: 538,
+                                lineNumber: 541,
                                 columnNumber: 15
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/src/app/admin/books/add/page.tsx",
-                            lineNumber: 537,
+                            lineNumber: 540,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -690,7 +693,7 @@ function AddBook() {
                                     children: "Cancel"
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                    lineNumber: 547,
+                                    lineNumber: 550,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$components$2f$Button$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["default"], {
@@ -700,30 +703,30 @@ function AddBook() {
                                     children: loading ? `Uploading ${uploadProgress}%` : 'Add Book'
                                 }, void 0, false, {
                                     fileName: "[project]/src/app/admin/books/add/page.tsx",
-                                    lineNumber: 555,
+                                    lineNumber: 558,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/src/app/admin/books/add/page.tsx",
-                            lineNumber: 546,
+                            lineNumber: 549,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/src/app/admin/books/add/page.tsx",
-                    lineNumber: 425,
+                    lineNumber: 428,
                     columnNumber: 9
                 }, this)
             ]
         }, void 0, true, {
             fileName: "[project]/src/app/admin/books/add/page.tsx",
-            lineNumber: 422,
+            lineNumber: 425,
             columnNumber: 7
         }, this)
     }, void 0, false, {
         fileName: "[project]/src/app/admin/books/add/page.tsx",
-        lineNumber: 421,
+        lineNumber: 424,
         columnNumber: 5
     }, this);
 }
