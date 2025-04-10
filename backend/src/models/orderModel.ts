@@ -44,7 +44,7 @@ Order.init(
         },
         userId: {
             type: DataTypes.UUID,
-            allowNull: false,
+            allowNull: true,
         },
         bookId: {
             type: DataTypes.STRING,

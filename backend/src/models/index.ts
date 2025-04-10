@@ -23,9 +23,9 @@ AbandonedCart.belongsTo(Book, { foreignKey: 'bookId', as: 'book' });
 // Initialize models
 const initializeModels = async () => {
     try {
-        // Use alter: true to update the schema without dropping tables
-        await sequelize.sync({ alter: true });
-        console.log('Database synchronized and schema updated');
+        // Don't alter the tables, just use them as they are
+        await sequelize.sync({ alter: false });
+        console.log('Database synchronized');
     } catch (error) {
         console.error('Error synchronizing database:', error);
     }

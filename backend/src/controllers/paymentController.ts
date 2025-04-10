@@ -60,7 +60,7 @@ export class PaymentController {
 
             const order = await Order.create({
                 id: uuidv4(),
-                userId: req.user?.id || uuidv4(),
+                userId: req.user?.id || null,
                 bookId,
                 email,
                 amount: cryptoAmount,
