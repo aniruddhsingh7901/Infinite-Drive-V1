@@ -44,7 +44,7 @@ import { Toaster } from 'react-hot-toast';
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Infinite Drive - Ebook Store",
+  title: "Infinite Drive - Self-Development and Self-Discipline E-books",
   description: "Premium ebooks with crypto payments",
 };
 

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import Order from '../models/orderModel';
+import { Order } from '../models';
 export const downloadTracker = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { orderId } = req.params;

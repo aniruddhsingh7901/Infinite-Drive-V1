@@ -2,9 +2,11 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const orderController_1 = require("../controllers/orderController");
-const authMiddleware_1 = require("../middleware/authMiddleware");
 const router = (0, express_1.Router)();
-router.get('/', authMiddleware_1.authenticate, orderController_1.getOrders);
-router.put('/:id', authMiddleware_1.authenticate, orderController_1.updateOrderStatus);
-router.post('/place', authMiddleware_1.authenticate, orderController_1.placeOrder);
+router.get('/check-status/:orderId', orderController_1.checkOrderStatus);
+router.get('/orders/:orderId', orderController_1.getOrder);
+router.get('/all-orders', orderController_1.getAllOrders);
+router.put('/orders/:orderId', orderController_1.updateOrder);
+router.delete('/orders/:orderId', orderController_1.deleteOrder);
 exports.default = router;
+//# sourceMappingURL=orderRoutes.js.map

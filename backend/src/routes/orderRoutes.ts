@@ -8,7 +8,7 @@ const router = Router();
 router.get('/check-status/:orderId', checkOrderStatus);
 
 router.get('/orders/:orderId', getOrder);
-router.get('/all-orders', authenticate, getAllOrders);
+router.get('/all-orders',  getAllOrders);
 router.put('/orders/:orderId', updateOrder);
 router.delete('/orders/:orderId', deleteOrder);
 

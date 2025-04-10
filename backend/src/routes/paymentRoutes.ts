@@ -12,7 +12,7 @@ const paymentService = new PaymentService();
 
 router.post('/create', paymentAuth, PaymentController.createPayment.bind(PaymentController));
 
-router.get('/check/:orderId', paymentAuth, PaymentController.checkPayment.bind(PaymentController));
+// router.get('/check/:orderId', paymentAuth, PaymentController.checkPayment.bind(PaymentController));
 
 
 

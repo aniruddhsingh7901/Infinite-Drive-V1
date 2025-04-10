@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Button from '@/components/Button';
 
 export default function CartPage() {
-  const { items, removeItem, total } = useCart();
+  const { items, removeItem, modifyQuantity, total } = useCart();
 
   return (
     <div className="max-w-4xl mx-auto p-8">
@@ -74,6 +74,23 @@ export default function CartPage() {
                       </button>
                     </div>
                   </div>
+
+                  {/* Quantity Modifiers */}
+                  <div className="flex items-center space-x-4 mt-2">
+                    <button 
+                      onClick={() => modifyQuantity(item.id, -1)} 
+                      className="text-gray-600 hover:text-gray-800 transition-colors"
+                    >
+                      -
+                    </button>
+                    <span>{item.quantity}</span>
+                    <button 
+                      onClick={() => modifyQuantity(item.id, 1)} 
+                      className="text-gray-600 hover:text-gray-800 transition-colors"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -96,7 +113,10 @@ export default function CartPage() {
 
             <div className="space-y-4">
               <Link href="/checkout">
-                <Button className="w-full py-4 text-lg">
+                <Button 
+                  className="w-full py-4 text-lg"
+                  disabled={items.length === 0}  // Disable button if cart is empty
+                >
                   Proceed to Checkout
                 </Button>
               </Link>

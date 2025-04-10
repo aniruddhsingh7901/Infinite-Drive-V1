@@ -4,9 +4,18 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import Button from './Button';
 import { useCart } from '@/lib/cart/CartContext';
+import BonusDisplay from './BonusDisplay';
+import PurchaseChecker from './PurchaseChecker';
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
 import axios from 'axios';
+
+type Bonus = {
+  title: string;
+  description: string;
+  type?: string;
+  filePath?: string;
+};
 
 type Book = {
   id: string;
@@ -16,6 +25,7 @@ type Book = {
   formats: string[];
   coverImagePaths: string[];
   filePaths: { [key: string]: string };
+  bonuses?: Bonus[];
 };
 
 export default function BookDisplay({ bookId }: { bookId: string }) {
@@ -29,7 +39,7 @@ export default function BookDisplay({ bookId }: { bookId: string }) {
   useEffect(() => {
     const fetchBook = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/books/${bookId}`);
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/books/${bookId}`);
         const fetchedBook = response.data;
 
         // Ensure price is a number
@@ -45,12 +55,20 @@ export default function BookDisplay({ bookId }: { bookId: string }) {
   }, [bookId]);
 
   if (!book) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center p-12 space-y-4">
+        <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-lg text-gray-600">Loading book information...</p>
+      </div>
+    );
   }
 
   const handleAddToCart = () => {
+    // Extract the base book ID without any format suffix
+    const baseBookId = book.id; // This will get the ID part before any "-PDF" or similar suffix
+    
     addItem({
-      id:  "1736235798107-PDF",// Unique ID including format
+      id: baseBookId, // Use the base book ID without format suffix
       title: `${book.title} (${selectedFormat})`,
       price: book.price,
       format: selectedFormat
@@ -74,9 +92,9 @@ export default function BookDisplay({ bookId }: { bookId: string }) {
 
   return (
     <div className="bg-white p-8">
-      <div className="flex flex-col md:flex-row gap-16">
+      <div className="flex flex-col gap-8">
         {/* Book Display Section */}
-        <div className="w-full md:w-1/2">
+        <div className="w-full max-w-md mx-auto mb-8">
           <div 
             className="relative min-h-[500px] flex justify-center items-center"
             onMouseEnter={() => setIsHovered(true)}
@@ -136,7 +154,7 @@ export default function BookDisplay({ bookId }: { bookId: string }) {
         </div>
 
         {/* Content Section */}
-        <div className="w-full md:w-1/2 space-y-8">
+        <div className="w-full max-w-2xl mx-auto space-y-8">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-4">{book.title}</h1>
             <p className="text-xl text-gray-600 leading-relaxed">{book.description}</p>
@@ -211,6 +229,20 @@ export default function BookDisplay({ bookId }: { bookId: string }) {
               <span>Secure payment with cryptocurrency</span>
             </div>
           </div>
+          
+          {/* Bonus Sections */}
+          {book.bonuses && book.bonuses.length > 0 && (
+            <PurchaseChecker bookId={book.id}>
+              {(isPurchased) => (
+                <BonusDisplay 
+                  bookId={book.id}
+                  bonuses={book.bonuses || []}
+                  isPurchased={isPurchased}
+                  onPurchaseClick={handleAddToCart}
+                />
+              )}
+            </PurchaseChecker>
+          )}
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@ import { Sequelize, QueryTypes } from 'sequelize';
 
 import sequelize from '../config/database';
 import { BlockchainService } from './blockchainService';
+import { CryptoWallet } from '../models';
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -24,6 +25,7 @@ interface SupportedCurrencies {
 
 interface VerificationResult {
   verified: boolean;
+  status?: string;
   message?: string;
   txHash?: string;
   amount?: number;
@@ -61,16 +63,17 @@ export class PaymentService {
     this.blockchain = new BlockchainService(); // TODO: Import and initialize proper blockchain service
     this.supportedCurrencies = {
       USDT: {
-        name: 'Tether',
+        name: 'Tether TRC20',
         symbol: 'USDT',
         address: process.env.USDT_ADDRESS || '',
         decimals: 6,
-        minConfirmations: 1,
+        minConfirmations: 19,
         networkFee: '1 TRX',
-        waitTime: '1-5 minutes',
+        waitTime: '5-20 minutes',
         qrFormat: (address: string, amount: string): string => {
-          const amountInUnits = Math.floor(parseFloat(amount) * 1e6);
-          return `tron://transfer?toAddress=${address}&amount=${amountInUnits}&token=TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t`;
+          // Try a different format specifically for Trust Wallet
+          // This format is more similar to other cryptocurrencies
+          return `tron:${address}?amount=${parseFloat(amount).toFixed(6)}&token=TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t`;
         },
         explorerUrl: 'https://tronscan.org/#/transaction/',
         contractAddress: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'
@@ -80,7 +83,7 @@ export class PaymentService {
         symbol: 'BTC',
         address: process.env.BTC_ADDRESS || '',
         decimals: 8,
-        minConfirmations: 2,
+        minConfirmations: 3,
         networkFee: '0.0001 BTC',
         waitTime: '10-60 minutes',
         qrFormat: (address, amount) => `bitcoin:${address}?amount=${parseFloat(amount).toFixed(8)}`,
@@ -91,19 +94,18 @@ export class PaymentService {
         symbol: 'LTC',
         address: process.env.LTC_ADDRESS || '',
         decimals: 8,
-        minConfirmations: 6,
+        minConfirmations: 3,
         networkFee: '0.001 LTC',
-        waitTime: '10-30 minutes',
+        waitTime: '2-30 minutes',
         qrFormat: (address, amount) => `litecoin:${address}?amount=${parseFloat(amount).toFixed(8)}`,
         explorerUrl: 'https://blockchair.com/litecoin/transaction/'
       },
-
       DOGE: {
         name: 'Dogecoin',
         symbol: 'DOGE',
         address: process.env.DOGE_ADDRESS || '',
         decimals: 8,
-        minConfirmations: 6,
+        minConfirmations: 3,
         networkFee: '1 DOGE',
         waitTime: '10-30 minutes',
         qrFormat: (address, amount) => `dogecoin:${address}?amount=${parseFloat(amount).toFixed(8)}`,
@@ -114,12 +116,12 @@ export class PaymentService {
         symbol: 'TRX',
         address: process.env.TRX_ADDRESS || '',
         decimals: 6,
-        minConfirmations: 1,
+        minConfirmations: 3,
         networkFee: '1 TRX',
         waitTime: '1-5 minutes',
         qrFormat: (address: string, amount: string): string => {
-          const amountInUnits = Math.floor(parseFloat(amount) * 1e6);
-          return `tron://transfer?toAddress=${address}&amount=${amountInUnits}`;
+          // Use the exact amount without multiplication
+          return `tron://transfer?toAddress=${address}&amount=${parseFloat(amount)}`;
         },
         explorerUrl: 'https://tronscan.org/#/transaction/'
       },
@@ -130,9 +132,9 @@ export class PaymentService {
         decimals: 12,
         minConfirmations: 10,
         networkFee: '0.0001 XMR',
-        waitTime: '20-30 minutes',
+        waitTime: '20-60 minutes',
         qrFormat: (address: string, amount: string): string => {
-          return `monero:${address}?tx_amount=${amount}`;
+          return `monero:${address}?tx_amount=${parseFloat(amount).toFixed(12)}`;
         },
         explorerUrl: 'https://xmrchain.net/tx/'
       },
@@ -141,12 +143,14 @@ export class PaymentService {
         symbol: 'SOL',
         address: process.env.SOL_ADDRESS || '',
         decimals: 9,
-        minConfirmations: 1,
+        minConfirmations: 3,
         networkFee: '0.000005 SOL',
-        waitTime: '1-2 minutes',
+        waitTime: '1-5 minutes',
         qrFormat: (address: string, amount: string): string => {
-          const amountInUnits = Math.floor(parseFloat(amount) * 1e9);
-          return `solana:${address}?amount=${amountInUnits}`;
+          // According to Solana Pay spec: https://docs.solanapay.com/spec
+          // The amount should be in SOL, not lamports
+          // Format with fixed precision to ensure valid number format
+          return `solana:${address}?amount=${parseFloat(amount).toFixed(9)}`;
         },
         explorerUrl: 'https://explorer.solana.com/tx/'
       }
@@ -157,46 +161,38 @@ export class PaymentService {
   async verifyPayment(
     paymentAddress: string,
     expectedAmount: number,
-    currency: string
+    currency: string,
+    orderId?: string
   ): Promise<VerificationResult> {
     try {
       // Get transaction details from blockchain
-      const transaction = await this.blockchain.getTransaction(paymentAddress, currency);
+      const verificationResult = await this.blockchain.getPaymentByAddress(paymentAddress, currency, orderId);
 
-      if (!transaction) {
-        return {
-          verified: false,
-          message: 'No transaction found'
-        };
+      if (!verificationResult.verified) {
+        return verificationResult;
       }
 
-      // Verify amount matches
-      const receivedAmount = parseFloat(transaction.amount);
-      if (receivedAmount < expectedAmount) {
+      // If we have a verified transaction, check if the amount matches
+      if (verificationResult.amount !== undefined && verificationResult.amount < expectedAmount) {
         return {
           verified: false,
-          amount: receivedAmount,
-          message: 'Insufficient payment amount'
-        };
-      }
-
-      // Check confirmations
-      const minConfirmations = this.getMinConfirmations(currency);
-      if (transaction.confirmations < minConfirmations) {
-        return {
-          verified: false,
-          confirmations: transaction.confirmations,
-          message: `Waiting for ${minConfirmations - transaction.confirmations} more confirmations`
+          status: 'insufficient',
+          amount: verificationResult.amount,
+          message: 'Insufficient payment amount',
+          txHash: verificationResult.txHash,
+          confirmations: verificationResult.confirmations,
+          explorerUrl: verificationResult.explorerUrl
         };
       }
 
       // Payment verified
       return {
         verified: true,
-        txHash: transaction.txHash,
-        amount: receivedAmount,
-        confirmations: transaction.confirmations,
-        explorerUrl: this.blockchain.getExplorerUrl(currency, transaction.txHash),
+        status: 'completed',
+        txHash: verificationResult.txHash,
+        amount: verificationResult.amount,
+        confirmations: verificationResult.confirmations,
+        explorerUrl: verificationResult.explorerUrl,
         completedAt: new Date()
       };
 
@@ -204,6 +200,7 @@ export class PaymentService {
       console.error('Payment verification error:', error);
       return {
         verified: false,
+        status: 'error',
         message: error instanceof Error ? error.message : 'Payment verification failed'
       };
     }
@@ -212,13 +209,14 @@ export class PaymentService {
   private getMinConfirmations(currency: string): number {
     const confirmations: { [key: string]: number } = {
       'BTC': 3,
-      'LTC': 6,
-      'TRON': 20,
-      'MONERO': 10,
-      'ZCASH': 8,
-      'USDT': 6
+      'LTC': 3,
+      'DOGE': 3,
+      'SOL': 3,
+      'TRX': 3,
+      'XMR': 10,
+      'USDT': 19
     };
-    return confirmations[currency] || 6;
+    return confirmations[currency] || 3;
   }
   formatAmount(amount: string | number, decimals?: number): number {
     try {
@@ -245,16 +243,32 @@ export class PaymentService {
   }
 
   async generatePaymentAddress(currency: string): Promise<string> {
-    console.log("🚀 ~ PaymentService ~ generatePaymentAddress ~ currency:", currency)
+    console.log("🚀 ~ PaymentService ~ generatePaymentAddress ~ currency:", currency);
+    
+    // First try to get the wallet address from the database
+    try {
+      const wallet = await CryptoWallet.findOne({ where: { symbol: currency } });
+      if (wallet && wallet.address) {
+        console.log(`Using wallet address from database for ${currency}: ${wallet.address}`);
+        return wallet.address;
+      }
+    } catch (error) {
+      console.error(`Error fetching wallet address from database for ${currency}:`, error);
+      // Continue to fallback to environment variables
+    }
+    
+    // Fallback to environment variables
     const currencyConfig = this.supportedCurrencies[currency];
-    console.log("🚀 ~ PaymentService ~ generatePaymentAddress ~ currencyConfig:", currencyConfig)
+    console.log("🚀 ~ PaymentService ~ generatePaymentAddress ~ currencyConfig:", currencyConfig);
     if (!currencyConfig?.address) {
       throw new Error('Unsupported currency or missing address');
     }
+    
+    console.log(`Using wallet address from environment variables for ${currency}: ${currencyConfig.address}`);
     return currencyConfig.address;
   }
 
-  formatQRCode(currency: string, address: string, amount: string | number): string {
+  async formatQRCode(currency: string, address: string, amount: string | number): Promise<string> {
     const currencyConfig = this.supportedCurrencies[currency];
     if (!currencyConfig) {
       throw new Error('Unsupported currency');
@@ -309,7 +323,7 @@ export class PaymentService {
       const currencyConfig = this.supportedCurrencies[currency];
 
       // Generate QR code data
-      const qrCodeData = this.formatQRCode(currency, paymentAddress, formattedAmount);
+      const qrCodeData = await this.formatQRCode(currency, paymentAddress, formattedAmount);
 
       return {
         ...order.toJSON(),
@@ -327,6 +341,7 @@ export class PaymentService {
   }
 
   getExplorerUrl(currency: string, txHash: string): string | undefined {
+    if (!txHash) return undefined;
     return this.supportedCurrencies[currency]?.explorerUrl + txHash;
   }
 

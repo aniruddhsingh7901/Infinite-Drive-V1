@@ -10,6 +10,12 @@ class Book extends Model {
     public filePaths!: { [key: string]: string };
     public coverImagePaths!: string[];
     public status!: string;
+    public bonuses?: { 
+        title: string; 
+        description: string;
+        type?: string;
+        filePath?: string;
+    }[];
 }
 
 Book.init(
@@ -17,7 +23,7 @@ Book.init(
         id: {
             type: DataTypes.STRING,
             primaryKey: true,
-            defaultValue: () => `${Date.now()}-PDF/EPUB`, // This matches your format
+            // defaultValue: () => `${Date.now()}-`, // This matches your format
             allowNull: false
         },
         title: {
@@ -55,10 +61,22 @@ Book.init(
             type: DataTypes.STRING,
             defaultValue: 'active',
         },
+        bonuses: {
+            type: DataTypes.JSONB,
+            allowNull: true,
+            get() {
+                const rawValue = this.getDataValue('bonuses');
+                return typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
+            },
+            set(value: { title: string; description: string }[]) {
+                this.setDataValue('bonuses', JSON.stringify(value));
+            },
+        },
     },
     {
         sequelize,
         modelName: 'Book',
+        tableName: 'Books'
     }
 );
 

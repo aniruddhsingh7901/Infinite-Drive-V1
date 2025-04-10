@@ -1,7 +1,23 @@
 {
-  "/admin/page": "app/admin/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/favicon.ico/route": "app/favicon.ico/route.js",
-  "/admin/login/page": "app/admin/login/page.js",
+  "/cart/page": "app/cart/page.js",
+  "/checkout/page": "app/checkout/page.js",
+  "/contact/page": "app/contact/page.js",
+  "/download/page": "app/download/page.js",
+  "/page": "app/page.js",
+  "/payments/process/page": "app/payments/process/page.js",
+  "/payments/status/page": "app/payments/status/page.js",
+  "/admin/abandoned-carts/page": "app/admin/abandoned-carts/page.js",
+  "/admin/analytics/page": "app/admin/analytics/page.js",
+  "/admin/books/add/page": "app/admin/books/add/page.js",
   "/admin/books/page": "app/admin/books/page.js",
-  "/admin/books/add/page": "app/admin/books/add/page.js"
+  "/admin/crypto/page": "app/admin/crypto/page.js",
+  "/admin/customers/page": "app/admin/customers/page.js",
+  "/admin/faq/page": "app/admin/faq/page.js",
+  "/admin/login/page": "app/admin/login/page.js",
+  "/admin/orders/page": "app/admin/orders/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/admin/reviews/page": "app/admin/reviews/page.js",
+  "/admin/settings/page": "app/admin/settings/page.js"
 }

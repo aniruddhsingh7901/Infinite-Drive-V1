@@ -187,7 +187,12 @@ export default function CryptoPayment({
   };
 
   const handleSuccess = (txHash: string, downloadLink: string, email: string) => {
-    router.push(`/download?txHash=${txHash}&link=${downloadLink}&email=${email}`);
+    // Get book title from URL if available
+    const urlParams = new URLSearchParams(window.location.search);
+    const bookTitle = urlParams.get('bookTitle') || 'Your E-book';
+    const format = urlParams.get('format') || 'PDF';
+    
+    router.push(`/download?txHash=${txHash}&link=${downloadLink}&email=${email}&orderId=${orderId}&bookTitle=${encodeURIComponent(bookTitle)}&format=${format}`);
   };
 
   const handleFailure = () => {

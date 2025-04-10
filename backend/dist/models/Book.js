@@ -9,9 +9,10 @@ class Book extends sequelize_1.Model {
 }
 Book.init({
     id: {
-        type: sequelize_1.DataTypes.INTEGER,
-        autoIncrement: true,
+        type: sequelize_1.DataTypes.STRING,
         primaryKey: true,
+        // defaultValue: () => `${Date.now()}-`, // This matches your format
+        allowNull: false
     },
     title: {
         type: sequelize_1.DataTypes.STRING,
@@ -27,22 +28,42 @@ Book.init({
     },
     formats: {
         type: sequelize_1.DataTypes.ARRAY(sequelize_1.DataTypes.STRING),
-        allowNull: false,
+        allowNull: true,
     },
-    filePath: {
-        type: sequelize_1.DataTypes.STRING,
+    filePaths: {
+        type: sequelize_1.DataTypes.JSONB,
         allowNull: false,
+        get() {
+            const rawValue = this.getDataValue('filePaths');
+            return typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
+        },
+        set(value) {
+            this.setDataValue('filePaths', JSON.stringify(value));
+        },
     },
-    coverImagePath: {
-        type: sequelize_1.DataTypes.STRING,
+    coverImagePaths: {
+        type: sequelize_1.DataTypes.ARRAY(sequelize_1.DataTypes.STRING),
         allowNull: false,
     },
     status: {
         type: sequelize_1.DataTypes.STRING,
         defaultValue: 'active',
     },
+    bonuses: {
+        type: sequelize_1.DataTypes.JSONB,
+        allowNull: true,
+        get() {
+            const rawValue = this.getDataValue('bonuses');
+            return typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue;
+        },
+        set(value) {
+            this.setDataValue('bonuses', JSON.stringify(value));
+        },
+    },
 }, {
     sequelize: database_1.default,
     modelName: 'Book',
+    tableName: 'Books'
 });
 exports.default = Book;
+//# sourceMappingURL=Book.js.map

@@ -4,6 +4,17 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import axios from 'axios';
 import Button from '@/components/Button';
+import BonusSectionManager from '@/components/BonusSectionManager';
+
+interface BonusItem {
+  title: string;
+  description: string;
+  type?: string;
+  file?: File | null;
+  filePath?: string;
+  coverImage?: File | null;
+  coverImagePath?: string;
+}
 
 interface BookForm {
   title: string;
@@ -16,6 +27,7 @@ interface BookForm {
     EPUB?: File;
   };
   status: 'active' | 'inactive';
+  bonuses: BonusItem[];
 }
 
 export default function EditBook() {
@@ -29,14 +41,15 @@ export default function EditBook() {
     formats: ['PDF'],
     coverImage: null,
     bookFiles: {},
-    status: 'active'
+    status: 'active',
+    bonuses: []
   });
 
   useEffect(() => {
     const fetchBook = async () => {
         const token = localStorage.getItem('token');
       try {
-         const response = await axios.get(`http://localhost:5000/books/${id}`, {
+         const response = await axios.get(`https://infinitedriven.com/api/books/${id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -49,7 +62,8 @@ export default function EditBook() {
           formats: book.formats,
           coverImage: null,
           bookFiles: {},
-          status: book.status
+          status: book.status,
+          bonuses: book.bonuses || []
         });
       } catch (error) {
         console.error('Error fetching book:', error);
@@ -69,25 +83,86 @@ export default function EditBook() {
     data.append('price', formData.price);
     data.append('formats', formData.formats.join(','));
     data.append('status', formData.status);
+    
+    // Process bonus items
+    const processedBonuses = [];
+    
+    // First, upload any bonus files to Cloudinary
+    for (const bonus of formData.bonuses) {
+      const bonusData: any = {
+        title: bonus.title,
+        description: bonus.description,
+        type: bonus.type || 'text'
+      };
+      
+      // If there's a file to upload and it's not a text-only bonus
+      if (bonus.file && bonus.type && bonus.type !== 'text') {
+        // Add the file to FormData for upload - use the same field name as in the backend
+        // The backend expects 'ebooks' for ebook files
+        data.append('ebooks', bonus.file);
+        
+        // Store the file name so we can match it on the server
+        bonusData.fileName = bonus.file.name;
+      } else if (bonus.filePath) {
+        // Keep existing file path if available
+        bonusData.filePath = bonus.filePath;
+      }
+      
+      // Handle cover image for bonus
+      if (bonus.coverImage) {
+        data.append('ebooks', bonus.coverImage);
+        bonusData.coverImageFileName = bonus.coverImage.name;
+      } else if (bonus.coverImagePath) {
+        // Keep existing cover image path if available
+        bonusData.coverImagePath = bonus.coverImagePath;
+      }
+      
+      processedBonuses.push(bonusData);
+    }
+    
+    // Add processed bonuses as JSON
+    if (processedBonuses.length > 0) {
+      data.append('bonuses', JSON.stringify(processedBonuses));
+    }
+    
     if (formData.coverImage) {
       data.append('coverImage', formData.coverImage);
     }
     if (formData.bookFiles.PDF) {
-      data.append('ebook', formData.bookFiles.PDF);
+      data.append('ebooks', formData.bookFiles.PDF);
     }
     if (formData.bookFiles.EPUB) {
-      data.append('ebook', formData.bookFiles.EPUB);
+      data.append('ebooks', formData.bookFiles.EPUB);
     }
    
      
     try {
         const token = localStorage.getItem('token');
-      const response = await axios.put(`http://localhost:5000/books/${id}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        'Authorization': `Bearer ${token}`
-      }
-    });
+        
+        console.log("Sending data to server:", {
+          title: formData.title,
+          description: formData.description,
+          price: formData.price,
+          formats: formData.formats.join(','),
+          bonuses: processedBonuses
+        });
+        
+        // Log the files being uploaded
+        console.log("Files being uploaded:", {
+          coverImage: formData.coverImage?.name,
+          ebooks: Object.entries(formData.bookFiles).map(([format, file]) => `${format}: ${file?.name}`),
+          bonusFiles: formData.bonuses
+            .filter(item => item.file && item.type !== 'text')
+            .map(item => `${item.type}: ${item.file?.name}`)
+        });
+        
+        const response = await axios.put(`https://infinitedriven.com/api/books/${id}`, data, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${token}`
+          },
+          timeout: 120000,
+        });
       console.log('Book updated:', response.data);
       router.push('/admin/books');
     } catch (error) {
@@ -208,6 +283,13 @@ export default function EditBook() {
               </div>
             ))}
           </div>
+
+          {/* Bonus Sections */}
+          <BonusSectionManager 
+            bonusItems={formData.bonuses}
+            onChange={(bonusItems) => setFormData({ ...formData, bonuses: bonusItems })}
+            maxBonuses={5}
+          />
 
           {/* Status */}
           <div>

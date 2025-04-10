@@ -53,18 +53,19 @@
 
 import { createContext, useContext, useState } from 'react';
 
-export interface CartItem {
+export type CartItem = {
   id: string;
   title: string;
   price: number;
-  quantity: number;  // Added this
-  format: 'PDF' | 'EPUB';  // Added this
+  quantity: number;
+  format: 'PDF' | 'EPUB';
 }
 
 type CartContextType = {
   items: CartItem[];
   addItem: (item: Omit<CartItem, 'quantity'>) => void;
   removeItem: (id: string) => void;
+  modifyQuantity: (id: string, delta: number) => void;  // New function for modifying quantity
   clearCart: () => void;
   total: number;
   itemCount: number;
@@ -77,14 +78,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = (item: Omit<CartItem, 'quantity'>) => {
     setItems(current => {
-      const exists = current.find(i => i.id === item.id);
+      const exists = current.find(i => 
+        i.id === item.id && i.format === item.format
+      );
+
       if (exists) {
         return current.map(i => 
-          i.id === item.id 
+          i.id === item.id && i.format === item.format
             ? { ...i, quantity: i.quantity + 1 }
             : i
         );
       }
+
       return [...current, { ...item, quantity: 1 }];
     });
   };
@@ -93,20 +98,40 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems(current => current.filter(item => item.id !== id));
   };
 
+  const modifyQuantity = (id: string, delta: number) => {
+    setItems(current =>
+      current.map(item =>
+        item.id === id && item.quantity + delta > 0
+          ? { ...item, quantity: item.quantity + delta }
+          : item
+      )
+    );
+  };
+
   const clearCart = () => setItems([]);
 
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const itemCount = items.reduce((count, item) => count + item.quantity, 0);
+  const total = items.reduce(
+    (sum, item) => sum + item.price * item.quantity, 
+    0
+  );
+
+  const itemCount = items.reduce(
+    (count, item) => count + item.quantity, 
+    0
+  );
 
   return (
-    <CartContext.Provider value={{ 
-      items, 
-      addItem, 
-      removeItem, 
-      clearCart, 
-      total,
-      itemCount 
-    }}>
+    <CartContext.Provider 
+      value={{ 
+        items, 
+        addItem, 
+        removeItem, 
+        modifyQuantity,  // Provide modifyQuantity function
+        clearCart, 
+        total,
+        itemCount 
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

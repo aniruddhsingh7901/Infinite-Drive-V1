@@ -6,6 +6,13 @@ import User from '../models/userModel';
 
 dotenv.config();
 
+
+interface AuthRequest extends Request {
+    user?: {
+        id: string;
+    };
+}
+
 export const register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { username, email, password } = req.body;
@@ -21,9 +28,11 @@ export const register = async (req: Request, res: Response, next: NextFunction):
 
 export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { email, password } = req.body;
+        const { email, passwords } = req.body;
+        console.log(req.body, "------------------")
         const user = await User.findOne({ where: { email } });
-        if (!user || !(await bcrypt.compare(password, user.password))) {
+        console.log("🚀 ~ login ~ user:", user)
+        if (!user || !(await bcrypt.compare(passwords, user.password))) {
             res.status(401).json({ message: 'Invalid email or password' });
             return;
         }
@@ -40,6 +49,41 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
         });
     } catch (error) {
         next(error);
+    }
+};
+
+
+
+export const changePassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+        const { email, oldPassword, newPassword } = req.body;
+        console.log("🚀 ~ changePassword ~ req.body:", req.body)
+        if (!email || !oldPassword || !newPassword) {
+            res.status(400).json({ message: 'Email, old password and new password are required' });
+            return;
+        }
+
+        const user = await User.findOne({ where: { email } });
+
+        if (!user) {
+            res.status(404).json({ message: 'User not found' });
+            return;
+        }
+
+        const isValidPassword = await bcrypt.compare(oldPassword, user.password);
+
+        if (!isValidPassword) {
+            res.status(401).json({ message: 'Current password is incorrect' });
+            return;
+        }
+
+        const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+        await user.update({ password: hashedNewPassword });
+
+        res.status(200).json({ message: 'Password updated successfully' });
+    } catch (error) {
+        console.error('Password change error:', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
 };
 

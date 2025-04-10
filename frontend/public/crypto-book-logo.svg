@@ -1,0 +1,43 @@
+<![CDATA[<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="95" fill="url(#gradient)" />
+  
+  <!-- Open Book -->
+  <path d="M50 70C50 65 55 60 60 60H140C145 60 150 65 150 70V140C150 145 145 150 140 150H60C55 150 50 145 50 140V70Z" fill="#FFFFFF" stroke="#333333" stroke-width="2"/>
+  
+  <!-- Book Spine -->
+  <path d="M100 60V150" stroke="#333333" stroke-width="2"/>
+  
+  <!-- Book Pages - Left -->
+  <path d="M60 70C65 65 75 65 80 70L95 85V135L80 140C75 145 65 145 60 140V70Z" fill="#F0F0F0" stroke="#333333" stroke-width="1"/>
+  
+  <!-- Book Pages - Right -->
+  <path d="M140 70C135 65 125 65 120 70L105 85V135L120 140C125 145 135 145 140 140V70Z" fill="#F0F0F0" stroke="#333333" stroke-width="1"/>
+  
+  <!-- Bitcoin Symbol -->
+  <g transform="translate(75, 85) scale(0.5)">
+    <circle cx="50" cy="50" r="40" fill="#F7931A"/>
+    <path d="M65.5 45.5C64.5 38.5 58 36.5 50 36V28H45V36H41V28H36V36H27V41H32C33.5 41 34 41.5 34 43V67C34 68 33 68.5 32 68.5H27V73.5H36V81.5H41V73.5H45V81.5H50V73.5C61 73 67 70 68 62C68.8 55.5 65.5 52 60 50.5C63.5 48.5 66.5 46 65.5 45.5ZM41 41H54C57.5 41 60.5 43 61 46.5C61.5 50 58.5 53 54 53H41V41ZM56 68H41V56H56C60 56 63 58 63.5 62C64 66 60 68 56 68Z" fill="white"/>
+  </g>
+  
+  <!-- Ethereum Symbol -->
+  <g transform="translate(115, 85) scale(0.5)">
+    <circle cx="50" cy="50" r="40" fill="#627EEA"/>
+    <path d="M50 30V54L70 45L50 30Z" fill="white" fill-opacity="0.6"/>
+    <path d="M50 30L30 45L50 54V30Z" fill="white"/>
+    <path d="M50 65V80L70 50L50 65Z" fill="white" fill-opacity="0.6"/>
+    <path d="M50 80V65L30 50L50 80Z" fill="white"/>
+  </g>
+  
+  <!-- Text: "CRYPTO BOOKS" -->
+  <text x="100" y="175" font-family="Arial, sans-serif" font-weight="bold" font-size="16" text-anchor="middle" fill="#FFFFFF">CRYPTO BOOKS</text>
+  
+  <!-- Gradient Definition -->
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E3B70" />
+      <stop offset="50%" stop-color="#29539B" />
+      <stop offset="100%" stop-color="#3A6073" />
+    </linearGradient>
+  </defs>
+</svg>]]>

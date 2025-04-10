@@ -18,6 +18,11 @@ class Order extends Model {
     declare downloadLink: string | null;
     declare downloadToken: string | null;
     declare downloadExpiresAt: Date | null;
+    declare rating: number | null;
+    declare reviewTitle: string | null;
+    declare reviewContent: string | null;
+    declare reviewApproved: boolean | null;
+    declare reviewedAt: Date | null;
 
     static async updateOrderStatus(orderId: string, update: any) {
         return await this.update(
@@ -86,6 +91,32 @@ Order.init(
             allowNull: true
         },
         downloadExpiresAt: {
+            type: DataTypes.DATE,
+            allowNull: true
+        },
+        // Review-related fields
+        rating: {
+            type: DataTypes.INTEGER,
+            allowNull: true,
+            validate: {
+                min: 1,
+                max: 5
+            }
+        },
+        reviewTitle: {
+            type: DataTypes.STRING,
+            allowNull: true
+        },
+        reviewContent: {
+            type: DataTypes.TEXT,
+            allowNull: true
+        },
+        reviewApproved: {
+            type: DataTypes.BOOLEAN,
+            allowNull: true,
+            defaultValue: true
+        },
+        reviewedAt: {
             type: DataTypes.DATE,
             allowNull: true
         },

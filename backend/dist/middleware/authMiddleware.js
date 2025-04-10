@@ -8,18 +8,24 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const authenticate = (req, res, next) => {
-    var _a;
-    const token = (_a = req.header('Authorization')) === null || _a === void 0 ? void 0 : _a.replace('Bearer ', '');
+    console.log('Authentication middleware called');
+    console.log('Headers:', req.headers);
+    const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) {
+        console.log('No token provided');
         return res.status(401).json({ message: 'Access denied. No token provided.' });
     }
     try {
+        console.log('Verifying token:', token);
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
+        console.log('Token verified, decoded:', decoded);
         req.user = decoded;
         next();
     }
     catch (ex) {
+        console.log('Invalid token:', ex);
         res.status(400).json({ message: 'Invalid token.' });
     }
 };
 exports.authenticate = authenticate;
+//# sourceMappingURL=authMiddleware.js.map

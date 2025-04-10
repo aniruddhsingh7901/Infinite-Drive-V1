@@ -68,10 +68,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if (mounted && !loading && !user && pathname !== '/admin/login') {
+    if (mounted && !loading && !user) {
+      console.log('User not authenticated, redirecting to login page');
       router.push('/admin/login');
     }
-  }, [user, loading, router, pathname, mounted]);
+  }, [user, loading, router, mounted]);
 
   if (!mounted || loading) {
     return (

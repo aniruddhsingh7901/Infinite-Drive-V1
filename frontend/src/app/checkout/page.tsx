@@ -23,28 +23,6 @@ const CRYPTO_PAYMENTS = {
       </svg>
     )
   },
-  tron: {
-    name: 'Tron',
-    symbol: 'TRX',
-    apiValue: 'TRX',
-    icon: () => (
-      <svg className="w-6 h-6 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none">
-        <path d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12z" fill="#EF0027"/>
-        <path d="M17.5 8.5L9.25 6l-4.75 9 13-6.5z" fill="white"/>
-      </svg>
-    )
-  },
-  monero: {
-    name: 'Monero',
-    symbol: 'XMR',
-    apiValue: 'XMR',
-    icon: () => (
-      <svg className="w-6 h-6 transition-transform group-hover:scale-110" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="12" fill="#FF6600"/>
-        <path d="M12 4v12M7 8v8M17 8v8M5 16h14" stroke="white" strokeWidth="2"/>
-      </svg>
-    )
-  },
   solana: {
     name: 'Solana',
     symbol: 'SOL',
@@ -137,19 +115,21 @@ export default function CheckoutPage() {
     
     try {
       const book = items[0];
-      console.log("🚀 ~ handleSubmit ~ book:", book)
+      
       const selectedCrypto = CRYPTO_PAYMENTS[formData.selectedCrypto as keyof typeof CRYPTO_PAYMENTS];
       
+      // Extract the base book ID without any format suffix
+     
       console.log('Payment Request Data:', {
         email: formData.email,
         selectedCrypto: formData.selectedCrypto,
         cryptoDetails: selectedCrypto,
-        bookId: book.id,
-        format:book.format,
+        bookId: book.id, // Use the base book ID without format suffix
+        format: book.format,
         amount: total
       });
-      
-      const response = await fetch('http://localhost:5000/payment/create', {
+      console.log("🚀 ~ handleSubmit ~ book:", book)
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/payment/create`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json'
@@ -157,8 +137,8 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           email: formData.email,
           cryptocurrency: selectedCrypto.apiValue,
-          bookId: book.id,
-          format:book.format,
+          bookId: book.id, // Use the base book ID without format suffix
+          format: book.format,
           amount: total
         })
       });
@@ -179,7 +159,11 @@ export default function CheckoutPage() {
         throw new Error(data.error || 'Payment initialization failed');
       }
   
-      router.push(`/payments/process?orderId=${data.orderId}&address=${data.paymentAddress}&qrData=${data.qrCodeData}&amount=${data.amount}&currency=${data.currency}`);
+      // Get book information to pass along
+      const bookTitle = book.title;
+      const format = book.format;
+      
+      router.push(`/payments/process?orderId=${data.orderId}&address=${data.paymentAddress}&qrData=${data.qrCodeData}&amount=${data.amount}&currency=${data.currency}&bookTitle=${encodeURIComponent(bookTitle)}&format=${format}`);
   
     } catch (err) {
       console.error('Payment Error:', err);

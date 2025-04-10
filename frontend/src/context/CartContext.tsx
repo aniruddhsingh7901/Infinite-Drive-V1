@@ -7,16 +7,17 @@ export type CartItem = {
   title: string;
   price: number;
   quantity: number;
-  format: 'PDF' | 'EPUB';  // Added format
+  format: 'PDF' | 'EPUB';
 }
 
 type CartContextType = {
   items: CartItem[];
   addItem: (item: Omit<CartItem, 'quantity'>) => void;
   removeItem: (id: string) => void;
+  modifyQuantity: (id: string, delta: number) => void;  // New function for modifying quantity
   clearCart: () => void;
   total: number;
-  itemCount: number;  // Added for header display
+  itemCount: number;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -29,7 +30,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const exists = current.find(i => 
         i.id === item.id && i.format === item.format
       );
-      
+
       if (exists) {
         return current.map(i => 
           i.id === item.id && i.format === item.format
@@ -37,13 +38,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
             : i
         );
       }
-      
+
       return [...current, { ...item, quantity: 1 }];
     });
   };
 
   const removeItem = (id: string) => {
     setItems(current => current.filter(item => item.id !== id));
+  };
+
+  const modifyQuantity = (id: string, delta: number) => {
+    setItems(current =>
+      current.map(item =>
+        item.id === id && item.quantity + delta > 0
+          ? { ...item, quantity: item.quantity + delta }
+          : item
+      )
+    );
   };
 
   const clearCart = () => setItems([]);
@@ -64,6 +75,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         items, 
         addItem, 
         removeItem, 
+        modifyQuantity,  // Provide modifyQuantity function
         clearCart, 
         total,
         itemCount 

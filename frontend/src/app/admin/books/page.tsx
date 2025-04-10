@@ -30,7 +30,7 @@ export default function BooksManagement() {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/books');
+        const response = await axios.get('https://infinitedriven.com/api/books');
         setBooks(response.data);
       } catch (error) {
         console.error('Error fetching books:', error);
@@ -55,7 +55,7 @@ export default function BooksManagement() {
     console.log("🚀 ~ handleDelete ~ id:", id)
      const token = localStorage.getItem('token');
     try {
-     await axios.delete(`http://localhost:5000/books/${id}`, {
+     await axios.delete(`https://infinitedriven.com/api/books/${id}`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -73,7 +73,7 @@ export default function BooksManagement() {
     setLoading(true);
 
     try {
-      const response = await axios.put(`http://localhost:5000/books/${editingBook.id}`, formData);
+      const response = await axios.put(`https://infinitedriven.com/api/books/${editingBook.id}`, formData);
       console.log('Book updated:', response.data);
       setBooks(books.map(book => (book.id === editingBook.id ? response.data.book : book)));
       setEditingBook(null);

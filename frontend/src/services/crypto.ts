@@ -137,7 +137,7 @@ interface PaymentStatusResponse {
 
 
 export async function checkPaymentStatus(orderId: string): Promise<PaymentStatusResponse>{
-  const response = await fetch(`http://localhost:5000/payment/check/${orderId}`);
+  const response = await fetch(`http://138.197.21.102:5002/payment/check/${orderId}`);
   const data = await response.json();
   console.log("🚀 ~ checkPaymentStatus ~ data:", data)
   return data.status;

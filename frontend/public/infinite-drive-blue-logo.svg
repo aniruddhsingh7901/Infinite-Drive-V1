@@ -1,0 +1,26 @@
+<![CDATA[<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Gradient background -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E3A8A" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Rounded square background with gradient -->
+  <rect x="20" y="20" width="160" height="160" rx="50" fill="url(#bgGradient)"/>
+  
+  <!-- White circular elements -->
+  <circle cx="100" cy="100" r="40" stroke="white" stroke-width="8" fill="none"/>
+  <circle cx="100" cy="100" r="25" stroke="white" stroke-width="8" fill="none"/>
+  
+  <!-- Diagonal line element -->
+  <path d="M130 70 L160 100" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  <path d="M130 70 L145 85" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  
+  <!-- Crypto symbols in the background -->
+  <text x="60" y="60" font-family="Arial, sans-serif" font-size="14" fill="rgba(255,255,255,0.2)">₿</text>
+  <text x="140" y="140" font-family="Arial, sans-serif" font-size="14" fill="rgba(255,255,255,0.2)">Ξ</text>
+  <text x="60" y="140" font-family="Arial, sans-serif" font-size="14" fill="rgba(255,255,255,0.2)">₿</text>
+  <text x="140" y="60" font-family="Arial, sans-serif" font-size="14" fill="rgba(255,255,255,0.2)">Ξ</text>
+</svg>]]>

@@ -1,4 +1,4 @@
-// File: /home/im/infinite-drive/frontend/src/app/layout.tsx
+// File: /infinite-drive-v2/frontend/src/app/layout.tsx
 import * as entry from '../../../src/app/layout.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

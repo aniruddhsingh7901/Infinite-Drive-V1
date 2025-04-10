@@ -1,19 +1,6 @@
-
-
 import axios from 'axios';
-import { CRYPTO_CONFIG } from '../config/cryptoConfig';
-
-
-interface VerificationResult {
-    verified: boolean;
-    status: string;
-    message?: string;
-    txHash?: string;
-    amount?: number;
-    confirmations?: number;
-    timestamp?: number;
-    explorerUrl?: string;
-}
+import { Order } from '../models';
+import { PaymentService } from '../controllers/webhook';
 
 interface BlockchainConfig {
     apiUrl: string;
@@ -25,84 +12,264 @@ interface BlockchainConfig {
     webhookUrl?: string;
 }
 
+const paymentService = new PaymentService();
 interface BlockchainConfigs {
     [key: string]: BlockchainConfig;
 }
 
+
+
 export class BlockchainService {
-    private readonly config: BlockchainConfigs = {
-            BTC: {
-                apiUrl: 'https://api.blockcypher.com/v1/btc/main',
-                apiKey: process.env.BLOCKCYPHER_API_TOKEN!,
-                explorerUrl: 'https://www.blockchain.com/btc/tx/',
-                decimals: 8,
-                minConfirmations: 2,
-                webhookUrl: `https://api.blockcypher.com/v1/btc/main/hooks?token=${process.env.BLOCKCYPHER_API_TOKEN!}`
-            },
-            LTC: {
-                apiUrl: 'https://api.blockcypher.com/v1/ltc/main',
-                apiKey: process.env.BLOCKCYPHER_API_TOKEN!,
-                explorerUrl: 'https://blockchair.com/litecoin/transaction/',
-                decimals: 8,
-                minConfirmations: 6
-            },
-            DOGE: {
-                apiUrl: 'https://api.blockcypher.com/v1/doge/main',
-                apiKey: process.env.BLOCKCYPHER_API_TOKEN!,
-                explorerUrl: 'https://dogechain.info/tx/',
-                decimals: 8,
-                minConfirmations: 6
-            },
-            SOL: {
-                apiUrl: 'https://api.solscan.io',
-                apiKey: process.env.SOLSCAN_API_KEY!,
-                explorerUrl: 'https://solscan.io/tx/',
-                decimals: 9,
-                minConfirmations: 1
-            },
-            USDT: {
-                apiUrl: 'https://api.trongrid.io',
-                apiKey: process.env.TRONGRID_API_KEY!,
-                explorerUrl: 'https://tronscan.org/#/transaction/',
-                decimals: 6,
-                minConfirmations: 19,
-                usdtContract: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'
-            }
+    private static instance: BlockchainService;
+    constructor() { }
+    public static getInstance(): BlockchainService {
+        if (!BlockchainService.instance) {
+            BlockchainService.instance = new BlockchainService();
+        }
+        return BlockchainService.instance;
+    }
+    readonly config: BlockchainConfigs = {
+        BTC: {
+            apiUrl: 'https://api.blockcypher.com/v1/btc/main',
+            apiKey: process.env.BLOCKCYPHER_API_TOKEN!,
+            explorerUrl: 'https://www.blockchain.com/btc/tx/',
+            decimals: 8,
+            minConfirmations: 3,
+            webhookUrl: `https://api.blockcypher.com/v1/btc/main/hooks?token=${process.env.BLOCKCYPHER_API_TOKEN!}`
+        },
+        LTC: {
+            apiUrl: 'https://api.blockcypher.com/v1/ltc/main',
+            apiKey: process.env.BLOCKCYPHER_API_TOKEN!,
+            explorerUrl: 'https://blockchair.com/litecoin/transaction/',
+            decimals: 8,
+            minConfirmations: 3
+        },
+        DOGE: {
+            apiUrl: 'https://api.blockcypher.com/v1/doge/main',
+            apiKey: process.env.BLOCKCYPHER_API_TOKEN!,
+            explorerUrl: 'https://dogechain.info/tx/',
+            decimals: 8,
+            minConfirmations: 3
+        },
+        SOL: {
+            apiUrl: 'https://api.solscan.io',
+            apiKey: process.env.HELIUS_API_KEY!,
+            explorerUrl: 'https://solscan.io/tx/',
+            decimals: 9,
+            minConfirmations: 3
+        },
+        USDT: {
+            apiUrl: 'https://api.trongrid.io',
+            apiKey: process.env.TRON_API_KEY!,
+            explorerUrl: 'https://tronscan.org/#/transaction/',
+            decimals: 6,
+            minConfirmations: 19,
+            usdtContract: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'
+        },
+        TRX: {
+            apiUrl: 'https://api.trongrid.io',
+            apiKey: process.env.TRON_API_KEY!,
+            explorerUrl: 'https://tronscan.org/#/transaction/',
+            decimals: 6,
+            minConfirmations: 3
+        },
+        XMR: {
+            apiUrl: 'https://xmrchain.net/api',
+            apiKey: '',
+            explorerUrl: 'https://xmrchain.net/tx/',
+            decimals: 12,
+            minConfirmations: 10
+        }
     };
 
     private currentOrderId: string | null = null;
+
+
+    async deleteHeliusWebhook(webhookId: string): Promise<void> {
+        const apiKey = process.env.HELIUS_API_KEY;
+        if (!apiKey) throw new Error('Helius API key is missing');
+
+        await axios.delete(`https://api.helius.xyz/v0/webhooks/${webhookId}?api-key=${apiKey}`);
+    }
+
+    async listHeliusWebhooks(): Promise<any[]> {
+        const apiKey = process.env.HELIUS_API_KEY;
+        if (!apiKey) throw new Error('Helius API key is missing');
+
+        try {
+            const response = await axios.get(`https://api.helius.xyz/v0/webhooks?api-key=${apiKey}`);
+            console.log("🚀 ~ BlockchainService ~ listHeliusWebhooks ~ response:", response.data)
+            return response.data as any[];
+        } catch (error: any) {
+            if (error.response?.status === 404) {
+                console.warn('Helius API does not support listing webhooks or the endpoint is incorrect.');
+                return []; // Return an empty list if the endpoint is not found
+            }
+            console.error('Error listing Helius webhooks:', error);
+            throw error; // Re-throw other errors
+        }
+    }
+
+    async deleteAllHeliusWebhooks(): Promise<void> {
+        const apiKey = process.env.HELIUS_API_KEY;
+        if (!apiKey) throw new Error('Helius API key is missing');
+
+        const webhooks = await this.listHeliusWebhooks();
+        for (const webhook of webhooks) {
+            await this.deleteHeliusWebhook(webhook.webhookID);
+            console.log(`Deleted webhook: ${webhook.webhookID}`);
+        }
+    }
 
     async registerWebhook(address: string, currency: string, orderId: string): Promise<void> {
         const config = this.config[currency.toUpperCase()];
         if (!config) throw new Error(`Unsupported currency: ${currency}`);
 
-        const webhookData = {
-            events: ['tx-confirmation', 'unconfirmed-tx'],
-            address,
-            url: `https://fef0-2409-40c4-3003-b00c-bf8f-b7d2-60c0-1fae.ngrok-free.app/webhooks/blockcypher?orderId=${orderId}`,
-            token: config.apiKey
-        };
-        console.log("🚀 ~ BlockchainService ~ registerWebhook ~ webhookData:", webhookData)
-
-        const data = await axios.post(`${config.apiUrl}/hooks`, webhookData);
-        // console.log("🚀 ~ BlockchainService ~ registerWebhook ~ data:", data)
         this.currentOrderId = orderId;
-        console.log("🚀 ~ BlockchainService ~ registerWebhook ~ this.currentOrderId :", this.currentOrderId)
+
+        try {
+            if (currency.toUpperCase() === 'USDT') {
+                // Register TRON Grid webhook
+                this.startTRC20TransactionPolling(address, orderId);
+                console.log(`Started polling for USDT transactions for address: ${address}`);
+            }
+            else if(currency.toUpperCase() === 'SOL') {
+                const apiKey = process.env.HELIUS_API_KEY;
+                if (!apiKey) throw new Error('Helius API key is missing');
+
+                const webhookData = {
+                    accountAddresses: [address],
+                    webhookURL: `http://138.197.21.102:5002/webhooks/helius?orderId=${orderId}`,
+                    transactionTypes: ['TRANSFER'],
+                };
+
+                console.log("🚀 ~ BlockchainService ~ registerWebhook ~ Helius webhookData:", webhookData);
+
+                try {
+                    // Delete all existing webhooks before registering a new one
+                    await this.deleteAllHeliusWebhooks();
+
+                    const response = await axios.post(
+                        `https://api.helius.xyz/v0/webhooks?api-key=${apiKey}`,
+                        webhookData,
+                        {
+                            headers: { 'Content-Type': 'application/json' },
+                        }
+                    );
+
+                    console.log('Helius webhook registered successfully:', response.data);
+                } catch (error) {
+                    console.error(`Error registering SOL webhook:`, error);
+                    throw error;
+                }
+            } else {
+                // BlockCypher for other cryptocurrencies
+                const webhookData = {
+                    events: ['tx-confirmation', 'unconfirmed-tx'],
+                    address,
+                    confirmations: 1,
+                    url: `http://138.197.21.102:5002/webhooks/blockcypher?orderId=${orderId}`,
+                    token: config.apiKey,
+                };
+
+                console.log("🚀 ~ BlockchainService ~ registerWebhook ~ webhookData:", webhookData);
+
+                await axios.post(`${config.apiUrl}/hooks`, webhookData);
+                console.log(`Successfully registered ${currency} webhook for order: ${orderId}`);
+            }
+        } catch (error) {
+            console.error(`Error registering ${currency} webhook:`, error);
+        }
     }
 
     getCurrentOrderId(): string | null {
         return this.currentOrderId;
     }
 
+    private async startTRC20TransactionPolling(address: string, orderId: string) {
+        const POLLING_INTERVAL = 30000; // 30 seconds
+        const MAX_ATTEMPTS = 60; // 30 minutes total
+        let attempts = 0;
 
+        const pollInterval = setInterval(async () => {
+            try {
+                attempts++;
+                const transactions = await this.getTRC20Transactions(address);
+                // console.log('TRC20 transactions:', transactions);
+                if (transactions.length > 0) {
+                    const latestTx = transactions[0];
+                    console.log('Latest TRC20 transaction:', latestTx);
+                    const isValidPayment = await this.validateTRC20Payment(latestTx, address, orderId);
+                    console.log('isValidatedPayment:', isValidPayment);
+                    if (isValidPayment) {
+                        await paymentService.updatePaymentStatus(
+                            orderId,
+                            'completed',
+                            latestTx.transaction_id
+                        );
+                        clearInterval(pollInterval);
+                    }
+                }
 
+                if (attempts >= MAX_ATTEMPTS) {
+                    clearInterval(pollInterval);
+                    console.log(`Stopped polling for address ${address} after ${MAX_ATTEMPTS} attempts`);
+                }
+            } catch (error) {
+                console.error('Error polling TRC20 transactions:', error);
+                if (attempts >= MAX_ATTEMPTS) {
+                    clearInterval(pollInterval);
+                }
+            }
+        }, POLLING_INTERVAL);
+    }
+
+    private async getTRC20Transactions(address: string): Promise<any[]> {
+        try {
+            const response = await axios.get(
+                `${this.config.USDT.apiUrl}/v1/accounts/${address}/transactions/trc20`, {
+                params: {
+                    limit: 10,
+                    contract_address: this.config.USDT.usdtContract,
+                    only_confirmed: true
+                },
+                headers: {
+                    'TRON-PRO-API-KEY': process.env.TRON_API_KEY
+                }
+            });
+
+            const data = response.data as { data: any[] };
+            return data.data || [];
+        } catch (error) {
+            console.error('Error fetching TRC20 transactions:', error);
+            return [];
+        }
+    }
+    private async validateTRC20Payment(transaction: any, address: string, orderId: string): Promise<boolean> {
+        try {
+            const order = await Order.findOne({ where: { id: orderId } });
+            if (!order) return false;
+
+            // Validate transaction details
+            const isCorrectToken = transaction.token_info?.address === this.config.USDT.usdtContract;
+            const isCorrectAddress = transaction.to === address;
+            const amount = parseInt(transaction.value) / Math.pow(10, this.config.USDT.decimals);
+            const isCorrectAmount = amount === parseFloat(order.amount.toString());
+
+            return isCorrectToken && isCorrectAddress && isCorrectAmount;
+        } catch (error) {
+            console.error('Error validating TRC20 payment:', error);
+            return false;
+        }
+
+    }
     async listWebhooks(currency: string): Promise<any> {
         const config = this.config[currency.toUpperCase()];
         if (!config) throw new Error(`Unsupported currency: ${currency}`);
 
         const response = await axios.get(`${config.apiUrl}/hooks?token=${config.apiKey}`);
         // console.log("🚀 ~ BlockchainService ~ listWebhooks ~ response:", response)
-        return response.data;
+        return response.data as any[];
   
     }
 
@@ -128,100 +295,54 @@ export class BlockchainService {
         }
     }
 
-    async verifyOtherCryptocurrencies(currency: string, payment_address: string, orderId: string): Promise<void> {
-        switch (currency) {
-            case 'USDT':
-                // Add verification logic for USDT
-                console.log(`Verifying USDT address: ${payment_address} for order: ${orderId}`);
-                break;
-            case 'TRX':
-                // Add verification logic for TRX
-                console.log(`Verifying TRX address: ${payment_address} for order: ${orderId}`);
-                break;
-            case 'XMR':
-                // Add verification logic for XMR
-                console.log(`Verifying XMR address: ${payment_address} for order: ${orderId}`);
-                break;
-            case 'SOL':
-                // Add verification logic for SOL
-                console.log(`Verifying SOL address: ${payment_address} for order: ${orderId}`);
-                break;
-            default:
-                throw new Error(`Unsupported currency: ${currency}`);
-        }
+
     }
+    
+    export const blockchainService = BlockchainService.getInstance();
+  
+    // In blockchainService.ts
+    // private async verifyTronTransaction(address: string, config: BlockchainConfig, isToken: boolean, orderId?: string): Promise<VerificationResult> {
+    //     const baseApiUrl = 'https://api.trongrid.io';
+    //     const MAX_ATTEMPTS = 3;
 
-        async getPaymentByAddress(address: string, currency: string): Promise<VerificationResult> {
-            const config = this.config[currency.toUpperCase()];
-            if (!config) throw new Error(`Unsupported currency: ${currency}`);
+    //     try {
+    //         // For USDT TRC20 token transactions
+    //         const response = await axios.get(`${baseApiUrl}/v1/accounts/${address}/transactions/trc20`, {
+    //             params: {
+    //                 contract_address: config.usdtContract, // USDT contract address
+    //                 only_confirmed: true,
+    //                 limit: 20
+    //             },
+    //             headers: {
+    //                 'TRON-PRO-API-KEY': process.env.TRON_API_KEY
+    //             }
+    //         });
 
-            switch (currency.toUpperCase()) {
-                case 'BTC':
-                case 'LTC':
-                case 'DOGE':
-                    return await this.verifyUTXOTransaction(currency, address, config);
+    //         const transactions = (response.data as { data: any[] }).data;
+    //         if (!transactions.length) {
+    //             return {
+    //                 verified: false,
+    //                 status: 'pending',
+    //                 message: 'No transactions found'
+    //             };
+    //         }
 
-                case 'SOL':
-                    return await this.verifySolanaTransaction(address, config);
+    //         // Find most recent confirmed transaction
+    //         const recentTx = transactions[0];
+    //         const txValue = parseInt(recentTx.value) / Math.pow(10, config.decimals);
 
-                case 'USDT':
-                    return await this.verifyTronTransaction(address, config);
+    //         return {
+    //             verified: true,
+    //             status: 'completed',
+    //             txHash: recentTx.transaction_id,
+    //             amount: txValue,
+    //             confirmations: config.minConfirmations,
+    //             timestamp: recentTx.block_timestamp,
+    //             explorerUrl: `${config.explorerUrl}${recentTx.transaction_id}`
+    //         };
+    //     } catch (error) {
+    //         console.error('Error verifying USDT transaction:', error);
+    //         throw error;
+    //     }
+    // }
 
-                default:
-                    throw new Error(`Verification not implemented for ${currency}`);
-            }
-        }
-
-        private async verifyUTXOTransaction(currency: string, address: string, config: BlockchainConfig): Promise<VerificationResult> {
-            // This method will be triggered by the webhook, so it doesn't need to call the API directly
-            return {
-                verified: false,
-                status: 'pending',
-                message: 'Waiting for webhook notification'
-            };
-        }
-
-        private async verifySolanaTransaction(address: string, config: BlockchainConfig): Promise<VerificationResult> {
-            const response = await axios.get(`${config.apiUrl}/account/transactions`, {
-                params: { account: address },
-                headers: { 'Authorization': `Bearer ${config.apiKey}` }
-            });
-
-            const recentTx = response.data?.[0];
-            if (!recentTx) return { verified: false, status: 'pending' };
-
-            return {
-                verified: recentTx.confirmations >= config.minConfirmations,
-                status: recentTx.confirmations >= config.minConfirmations ? 'completed' : 'pending',
-                txHash: recentTx.signature,
-                amount: recentTx.lamports / Math.pow(10, config.decimals),
-                confirmations: recentTx.confirmations,
-                timestamp: recentTx.blockTime * 1000,
-                explorerUrl: `${config.explorerUrl}${recentTx.signature}`
-            };
-        }
-
-        private async verifyTronTransaction(address: string, config: BlockchainConfig): Promise<VerificationResult> {
-            const response = await axios.get(`${config.apiUrl}/v1/accounts/${address}/transactions/trc20`, {
-                params: {
-                    contract_address: config.usdtContract,
-                    only_confirmed: true,
-                    limit: 1
-                },
-                headers: { 'TRON-PRO-API-KEY': config.apiKey }
-            });
-
-            const recentTx = response.data.data?.[0];
-            if (!recentTx) return { verified: false, status: 'pending' };
-
-            return {
-                verified: parseInt(recentTx.value) >= 0,
-                status: parseInt(recentTx.value) >= 0 ? 'completed' : 'pending',
-                txHash: recentTx.transaction_id,
-                amount: parseInt(recentTx.value) / Math.pow(10, config.decimals),
-                confirmations: recentTx.confirmed ? config.minConfirmations : 0,
-                timestamp: recentTx.block_timestamp,
-                explorerUrl: `${config.explorerUrl}${recentTx.transaction_id}`
-            };
-        }
-}
