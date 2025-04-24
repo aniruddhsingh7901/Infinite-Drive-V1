@@ -34,9 +34,19 @@ class PaymentController {
             // Use the converted cryptocurrency amount from the crypto service
             console.log(`Conversion for ${cryptocurrency}: $${amount} USD = ${cryptoAmount} ${cryptocurrency}`);
             // No need to override the conversion, just use the properly converted amount
+            // If user is logged in, ensure userId is an integer
+            let userId = null;
+            if (req.user && req.user.id) {
+                // Try to parse the user ID as an integer
+                const parsedId = parseInt(req.user.id, 10);
+                // Only use the parsed ID if it's a valid number
+                if (!isNaN(parsedId)) {
+                    userId = parsedId;
+                }
+            }
             const order = await models_1.Order.create({
                 id: (0, uuid_1.v4)(),
-                userId: req.user?.id || (0, uuid_1.v4)(),
+                userId: userId,
                 bookId,
                 email,
                 amount: cryptoAmount,

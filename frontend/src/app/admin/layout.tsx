@@ -30,9 +30,9 @@ export default function AdminLayout({
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const { logout } = useAuth();
 
-   if (pathname && pathname.includes('/admin/login')) {
-    return <>{children}</>;
-  }
+ if (pathname && (pathname.includes('/admin/login') || pathname.includes('/admin/reset-password'))) {
+  return <>{children}</>;
+}
 
   const handleLogout = () => {
     logout();

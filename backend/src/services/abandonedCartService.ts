@@ -32,7 +32,7 @@ class AbandonedCartService {
           {
             model: Book,
             as: 'book',
-            attributes: ['title', 'author', 'price']
+            attributes: ['title', 'price']
           }
         ],
         order: [['createdAt', 'DESC']]
@@ -65,7 +65,7 @@ class AbandonedCartService {
           {
             model: Book,
             as: 'book',
-            attributes: ['title', 'author', 'price']
+            attributes: ['title', 'price']
           }
         ]
       });
@@ -86,7 +86,7 @@ class AbandonedCartService {
           {
             model: Book,
             as: 'book',
-            attributes: ['title', 'author', 'price']
+            attributes: ['title', 'price']
           }
         ]
       });
@@ -96,27 +96,17 @@ class AbandonedCartService {
       }
 
       const book = cart.get('book') as any;
+      const email = cart.get('email') as string;
+      const format = cart.get('format') as string;
+      const amount = cart.get('amount') as number;
       
-      // Generate a recovery link (this would typically include a token)
-      const recoveryLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/checkout?recover=${cartId}`;
-      
-      // Send the email
-      const subject = `Complete Your Purchase: ${book.title}`;
-      const body = `
-Dear Customer,
-
-We noticed you didn't complete your purchase of "${book.title}".
-
-Your cart is still waiting for you! Click the link below to complete your purchase:
-${recoveryLink}
-
-If you have any questions or need assistance, please reply to this email.
-
-Best regards,
-The Infinite Drive Team
-      `;
-
-      const emailSent = await emailService.sendEmail(cart.get('email') as string, subject, body);
+      // Send the email using the new abandoned cart reminder method
+      const emailSent = await emailService.sendAbandonedCartReminder(email, {
+        cartId: cartId,
+        bookTitle: book.title,
+        format: format,
+        amount: amount
+      });
       
       if (emailSent) {
         // Update the cart record

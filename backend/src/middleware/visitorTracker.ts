@@ -2,6 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { Visitor } from '../models';
 import axios from 'axios';
+import NodeCache from 'node-cache';
+
+// Simple in-memory cache for IP geolocation data
+// Cache IP location data for 24 hours
+const locationCache = new NodeCache({ stdTTL: 86400 });
 
 // Function to get visitor's country and city using IP geolocation
 const getLocationFromIP = async (ip: string) => {
@@ -11,15 +16,50 @@ const getLocationFromIP = async (ip: string) => {
       return { country: 'Local', city: 'Development' };
     }
     
-    // Use a free IP geolocation service
-    const response = await axios.get(`https://ipapi.co/${ip}/json/`);
+    // Check if we have cached data for this IP
+    const cachedLocation = locationCache.get(ip);
+    if (cachedLocation) {
+      return cachedLocation as { country: string | null; city: string | null };
+    }
+    
+    // Clean the IP address (remove IPv6 parts if mixed format)
+    const cleanIp = ip.includes(',') ? ip.split(',')[0].trim() : ip;
+    
+    // Use a free IP geolocation service with rate limiting
+    const response = await axios.get(`https://ipapi.co/${cleanIp}/json/`, {
+      timeout: 3000, // 3 second timeout
+      headers: {
+        'User-Agent': 'InfiniteDrive/1.0'
+      }
+    });
+    
+    // Check if we got a rate limit error
+    if (response.status === 429) {
+      console.log('IP geolocation rate limit reached, using null values');
+      return { country: null, city: null };
+    }
+    
     const data = response.data as { country_name: string; city: string };
-    return {
+    const locationData = {
       country: data.country_name,
       city: data.city
     };
-  } catch (error) {
-    console.error('Error getting location from IP:', error);
+    
+    // Cache the result
+    locationCache.set(ip, locationData);
+    
+    return locationData;
+  } catch (error: any) {
+    // If it's a rate limit error (429), log it differently
+    if (error.response && error.response.status === 429) {
+      console.log('IP geolocation rate limit reached, using null values');
+    } else {
+      console.error('Error getting location from IP:', error);
+    }
+    
+    // Cache the null result to avoid repeated failed requests
+    locationCache.set(ip, { country: null, city: null }, 3600); // Cache for 1 hour
+    
     return { country: null, city: null };
   }
 };

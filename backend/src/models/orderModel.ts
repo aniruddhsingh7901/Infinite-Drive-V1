@@ -1,8 +1,9 @@
 
 
 // src/models/orderModel.ts
-import { Model, DataTypes } from 'sequelize';
+import { Model, DataTypes, Op } from 'sequelize';
 import sequelize from '../config/database';
+import { webSocketService } from '../app';
 
 class Order extends Model {
     declare id: string;
@@ -25,13 +26,61 @@ class Order extends Model {
     declare reviewedAt: Date | null;
 
     static async updateOrderStatus(orderId: string, update: any) {
-        return await this.update(
+        const [numUpdated, updatedOrders] = await this.update(
             update,
             {
                 where: { id: orderId },
                 returning: true
             }
         );
+        
+        if (numUpdated > 0 && updatedOrders && updatedOrders.length > 0) {
+            const updatedOrder = updatedOrders[0];
+            // Broadcast the update to admin clients
+            try {
+                webSocketService.broadcastOrderUpdate(updatedOrder);
+                webSocketService.broadcastDashboardUpdate();
+            } catch (error) {
+                console.error('Error broadcasting order update:', error);
+            }
+        }
+        
+        return [numUpdated, updatedOrders];
+    }
+    
+    static async findRecentOrders(limit: number = 5) {
+        return await this.findAll({
+            order: [['createdAt', 'DESC']],
+            limit
+        });
+    }
+    
+    static async findPendingOrders() {
+        return await this.findAll({
+            where: { status: 'pending' },
+            order: [['createdAt', 'DESC']]
+        });
+    }
+    
+    static async findCompletedOrders() {
+        return await this.findAll({
+            where: { status: 'completed' },
+            order: [['createdAt', 'DESC']]
+        });
+    }
+    
+    static async getDailyOrders() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        return await this.findAll({
+            where: {
+                createdAt: {
+                    [Op.gte]: today
+                }
+            },
+            order: [['createdAt', 'DESC']]
+        });
     }
 }
 
@@ -43,8 +92,8 @@ Order.init(
             primaryKey: true,
         },
         userId: {
-            type: DataTypes.UUID,
-            allowNull: false,
+            type: DataTypes.INTEGER,
+            allowNull: true,
         },
         bookId: {
             type: DataTypes.STRING,

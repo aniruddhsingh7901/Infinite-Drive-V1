@@ -202,8 +202,17 @@ export default function CryptoManagement() {
                         alt={wallet.name}
                         className="h-10 w-10 rounded-full"
                         onError={(e) => {
-                          // Fallback if image doesn't exist
-                          (e.target as HTMLImageElement).src = '/crypto-icons/bitcoin-btc-logo.svg';
+                          // Try the alternative format (e.g., dogecoin-doge-logo.svg)
+                          const target = e.target as HTMLImageElement;
+                          const symbol = wallet.symbol.toLowerCase();
+                          const fullName = wallet.name.toLowerCase().replace(' ', '-');
+                          target.src = `/crypto-icons/${fullName}-${symbol}-logo.svg`;
+                          
+                          // Add a second error handler in case the alternative format also fails
+                          target.onerror = () => {
+                            target.src = '/crypto-icons/bitcoin-btc-logo.svg';
+                            target.onerror = null; // Prevent infinite loop
+                          };
                         }}
                       />
                     </div>

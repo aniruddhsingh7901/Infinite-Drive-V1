@@ -137,19 +137,21 @@ export default function BookDisplay({ bookId }: { bookId: string }) {
               />
             </div>
 
-            {/* Navigation Buttons */}
-            <button
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-gray-800 bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75"
-              onClick={handlePrevImage}
-            >
-              &lt;
-            </button>
-            <button
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-gray-800 bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75"
-              onClick={handleNextImage}
-            >
-              &gt;
-            </button>
+{/* Navigation Buttons */}
+<button
+  className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-gray-800 bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-75"
+  onClick={handlePrevImage}
+  style={{ marginTop: '20px', marginLeft: '-50px' }} // Adjust this value as needed
+>
+  &lt;
+</button>
+<button
+  className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-gray-800 bg-opacity-50 text-white p-3 rounded-full hover:bg-opacity-75"
+  onClick={handleNextImage}
+  style={{ marginTop: '20px', marginRight: '-50px' }} // Adjust this value as needed
+>
+  &gt;
+</button>
           </div>
         </div>
 

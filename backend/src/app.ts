@@ -15,14 +15,19 @@ import downloadRoutes from './routes/downloadRoutes';
 import webhookRoutes from './routes/webHookRoutes';
 import contactRoutes from './routes/contactRoutes';
 import sequelize from './config/database';
+import { QueryTypes } from 'sequelize';
 import './models';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import User from './models/userModel';
+import AuthToken from './models/authTokenModel';
+import { TokenType } from './models/authTokenModel';
 import orderRoutes from './routes/orderRoutes';
 import adminRoutes from './routes/adminRoutes';
 import purchaseRoutes from './routes/purchaseRoutes';
 import cryptoWalletRoutes from './routes/cryptoWalletRoutes';
 import trackVisitor from './middleware/visitorTracker';
+import emailService from './services/emailService';
 
 const app = express();
 
@@ -91,19 +96,28 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Create admin user function
 const createAdminUser = async () => {
   try {
-    const email = 'admin@example.com';
-    const password = 'adminpassword';
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const adminEmail = 'nellbriganceixm45@gmail.com';
 
-    const [user, created] = await User.findOrCreate({
-      where: { email },
-      defaults: { email, password: hashedPassword, role: 'admin' }
-    });
+    // Check if admin user already exists
+    const existingAdmin = await User.findOne({ where: { email: adminEmail } });
 
-    if (created) {
-      console.log('Admin user created successfully');
-    } else {
+    if (existingAdmin) {
       console.log('Admin user already exists');
+
+    } else {
+      // Generate a secure random password
+      const tempPassword = crypto.randomBytes(16).toString('hex');
+      const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
+      // Create admin user
+      const newAdmin = await User.create({
+        email: adminEmail,
+        password: hashedPassword,
+        role: 'admin',
+      });
+
+      console.log('Admin user created successfully');
+
     }
   } catch (error) {
     console.error('Error creating admin user:', error);
@@ -117,18 +131,24 @@ console.log(`Using port: ${PORT}`);
 sequelize.authenticate()
   .then(async () => {
     console.log('Database connected...');
-    await sequelize.sync(); // Remove alter: true to avoid modifying existing tables
-    console.log('Database synchronized');
+
+    // Import models and initialize associations
+    const { initializeModels } = await import('./models/index');
+
+    // Use the initializeModels function instead of directly calling sequelize.sync
+    await initializeModels();
+    console.log('Database synchronized without schema changes');
+
     await createAdminUser();
     server.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
-     console.log(`Environment: ${process.env.NODE_ENV}`);
-   });
+      console.log(`Environment: ${process.env.NODE_ENV}`);
+    });
+
     // Create HTTPS server
     https.createServer(sslOptions, app).listen(HTTPS_PORT, () => {
       console.log(`HTTPS Server running on port ${HTTPS_PORT}`);
     });
-
   })
   .catch((err: any) => {
     console.error('Unable to connect to the database:', err);

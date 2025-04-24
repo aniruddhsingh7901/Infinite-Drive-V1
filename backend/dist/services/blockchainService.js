@@ -48,20 +48,6 @@ class BlockchainService {
                 minConfirmations: 19,
                 usdtContract: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t'
             },
-            TRX: {
-                apiUrl: 'https://api.trongrid.io',
-                apiKey: process.env.TRON_API_KEY,
-                explorerUrl: 'https://tronscan.org/#/transaction/',
-                decimals: 6,
-                minConfirmations: 3
-            },
-            XMR: {
-                apiUrl: 'https://xmrchain.net/api',
-                apiKey: '',
-                explorerUrl: 'https://xmrchain.net/tx/',
-                decimals: 12,
-                minConfirmations: 10
-            }
         };
         this.currentOrderId = null;
     }
@@ -118,8 +104,9 @@ class BlockchainService {
             }
             else if (currency.toUpperCase() === 'SOL') {
                 const apiKey = process.env.HELIUS_API_KEY;
-                if (!apiKey)
-                    throw new Error('Helius API key is missing');
+                if (!apiKey) {
+                    console.error('Helius API key is missing');
+                }
                 const webhookData = {
                     accountAddresses: [address],
                     webhookURL: `http://138.197.21.102:5002/webhooks/helius?orderId=${orderId}`,
@@ -261,45 +248,4 @@ class BlockchainService {
 }
 exports.BlockchainService = BlockchainService;
 exports.blockchainService = BlockchainService.getInstance();
-// In blockchainService.ts
-// private async verifyTronTransaction(address: string, config: BlockchainConfig, isToken: boolean, orderId?: string): Promise<VerificationResult> {
-//     const baseApiUrl = 'https://api.trongrid.io';
-//     const MAX_ATTEMPTS = 3;
-//     try {
-//         // For USDT TRC20 token transactions
-//         const response = await axios.get(`${baseApiUrl}/v1/accounts/${address}/transactions/trc20`, {
-//             params: {
-//                 contract_address: config.usdtContract, // USDT contract address
-//                 only_confirmed: true,
-//                 limit: 20
-//             },
-//             headers: {
-//                 'TRON-PRO-API-KEY': process.env.TRON_API_KEY
-//             }
-//         });
-//         const transactions = (response.data as { data: any[] }).data;
-//         if (!transactions.length) {
-//             return {
-//                 verified: false,
-//                 status: 'pending',
-//                 message: 'No transactions found'
-//             };
-//         }
-//         // Find most recent confirmed transaction
-//         const recentTx = transactions[0];
-//         const txValue = parseInt(recentTx.value) / Math.pow(10, config.decimals);
-//         return {
-//             verified: true,
-//             status: 'completed',
-//             txHash: recentTx.transaction_id,
-//             amount: txValue,
-//             confirmations: config.minConfirmations,
-//             timestamp: recentTx.block_timestamp,
-//             explorerUrl: `${config.explorerUrl}${recentTx.transaction_id}`
-//         };
-//     } catch (error) {
-//         console.error('Error verifying USDT transaction:', error);
-//         throw error;
-//     }
-// }
 //# sourceMappingURL=blockchainService.js.map

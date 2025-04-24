@@ -6,8 +6,8 @@
   "/contact/page": "app/contact/page.js",
   "/download/page": "app/download/page.js",
   "/page": "app/page.js",
-  "/payments/process/page": "app/payments/process/page.js",
   "/payments/status/page": "app/payments/status/page.js",
+  "/payments/process/page": "app/payments/process/page.js",
   "/admin/abandoned-carts/page": "app/admin/abandoned-carts/page.js",
   "/admin/analytics/page": "app/admin/analytics/page.js",
   "/admin/books/add/page": "app/admin/books/add/page.js",
@@ -18,6 +18,7 @@
   "/admin/login/page": "app/admin/login/page.js",
   "/admin/orders/page": "app/admin/orders/page.js",
   "/admin/page": "app/admin/page.js",
+  "/admin/reset-password/page": "app/admin/reset-password/page.js",
   "/admin/reviews/page": "app/admin/reviews/page.js",
   "/admin/settings/page": "app/admin/settings/page.js"
 }

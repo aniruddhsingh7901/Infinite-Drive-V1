@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.AbandonedCart = exports.Visitor = exports.CryptoWallet = exports.DownloadToken = exports.Order = exports.Book = exports.User = void 0;
+exports.initializeModels = exports.AuthToken = exports.AbandonedCart = exports.Visitor = exports.CryptoWallet = exports.DownloadToken = exports.Order = exports.Book = exports.User = void 0;
 const database_1 = __importDefault(require("../config/database"));
 const userModel_1 = __importDefault(require("./userModel"));
 exports.User = userModel_1.default;
@@ -20,25 +20,30 @@ const visitorModel_1 = __importDefault(require("./visitorModel"));
 exports.Visitor = visitorModel_1.default;
 const abandonedCartModel_1 = __importDefault(require("./abandonedCartModel"));
 exports.AbandonedCart = abandonedCartModel_1.default;
+const authTokenModel_1 = __importDefault(require("./authTokenModel"));
+exports.AuthToken = authTokenModel_1.default;
 // Define associations
 Book_1.default.hasMany(orderModel_1.default, { foreignKey: 'bookId', as: 'books' });
 orderModel_1.default.belongsTo(Book_1.default, { foreignKey: 'bookId', as: 'book' });
 // Add User-Order association
 userModel_1.default.hasMany(orderModel_1.default, { foreignKey: 'userId' });
 orderModel_1.default.belongsTo(userModel_1.default, { foreignKey: 'userId', as: 'user' });
+// Add User-AuthToken association
+userModel_1.default.hasMany(authTokenModel_1.default, { foreignKey: 'userId' });
+authTokenModel_1.default.belongsTo(userModel_1.default, { foreignKey: 'userId' });
 // Add Book-AbandonedCart association
 Book_1.default.hasMany(abandonedCartModel_1.default, { foreignKey: 'bookId', as: 'abandonedCarts' });
 abandonedCartModel_1.default.belongsTo(Book_1.default, { foreignKey: 'bookId', as: 'book' });
 // Initialize models
 const initializeModels = async () => {
     try {
-        // Use alter: true to update the schema without dropping tables
-        await database_1.default.sync({ alter: true });
-        console.log('Database synchronized and schema updated');
+        // Do not use alter: true to avoid modifying existing tables
+        await database_1.default.sync({ force: false, alter: false });
+        console.log('Database synchronized without schema changes');
     }
     catch (error) {
         console.error('Error synchronizing database:', error);
     }
 };
-initializeModels();
+exports.initializeModels = initializeModels;
 //# sourceMappingURL=index.js.map

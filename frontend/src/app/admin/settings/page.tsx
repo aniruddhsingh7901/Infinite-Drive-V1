@@ -16,6 +16,7 @@ interface SecuritySettings {
   currentPassword: string;
   newPassword: string;
   confirmPassword: string;
+  otpEnabled: boolean;
 }
 
 export default function SettingsPage() {
@@ -37,12 +38,37 @@ export default function SettingsPage() {
   const [securitySettings, setSecuritySettings] = useState<SecuritySettings>({
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    otpEnabled: false
   });
 
   useEffect(() => {
     fetchSettings();
+    fetchSecuritySettings();
   }, []);
+
+  const fetchSecuritySettings = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://138.197.21.102:5002/auth/check-auth', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.status === 200 && response.data.user) {
+        setSecuritySettings(prevSettings => ({
+          ...prevSettings,
+          otpEnabled: response.data.user.otpEnabled || false
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching security settings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -126,11 +152,12 @@ export default function SettingsPage() {
       });
       
       setSuccess('Password changed successfully!');
-      setSecuritySettings({
+      setSecuritySettings(prevSettings => ({
+        ...prevSettings,
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
-      });
+      }));
     } catch (error) {
       console.error('Error changing password:', error);
       
@@ -143,11 +170,12 @@ export default function SettingsPage() {
       
       // For demo purposes, show success anyway
       setSuccess('Password changed successfully! (Demo mode)');
-      setSecuritySettings({
+      setSecuritySettings(prevSettings => ({
+        ...prevSettings,
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
-      });
+      }));
     } finally {
       setLoading(false);
     }
@@ -305,6 +333,62 @@ export default function SettingsPage() {
       {/* Security Tab */}
       {activeTab === 'security' && (
         <div className="bg-white rounded-lg shadow p-6">
+          <div className="mb-6 pb-6 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Two-Factor Authentication</h3>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Enable OTP (One-Time Password) authentication for additional security.
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  When enabled, you'll need to enter a verification code sent to your email each time you log in.
+                </p>
+              </div>
+              <div className="ml-4">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      setLoading(true);
+                      const token = localStorage.getItem('token');
+                      await axios.post('http://138.197.21.102:5002/auth/toggle-otp', {}, {
+                        headers: {
+                          'Authorization': `Bearer ${token}`,
+                          'Content-Type': 'application/json'
+                        }
+                      });
+                      
+                      // Toggle the state locally
+                      setSecuritySettings(prev => ({
+                        ...prev,
+                        otpEnabled: !prev.otpEnabled
+                      }));
+                      
+                      setSuccess(`Two-factor authentication ${securitySettings.otpEnabled ? 'disabled' : 'enabled'} successfully!`);
+                    } catch (error) {
+                      console.error('Error toggling OTP:', error);
+                      setError('Failed to update two-factor authentication settings.');
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    securitySettings.otpEnabled ? 'bg-blue-600' : 'bg-gray-200'
+                  }`}
+                  disabled={loading}
+                >
+                  <span className="sr-only">Toggle OTP</span>
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      securitySettings.otpEnabled ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Change Password</h3>
           <form onSubmit={handlePasswordChange} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

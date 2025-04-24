@@ -7,6 +7,7 @@ import { DownloadController } from './downloadController';
 import EmailService from '../services/emailService';
 import { PaymentService } from '../services/paymentService';
 import { orderStore } from '../services/orderStore';
+import WebSocketService from '../services/websocketService';
 
 // Extend Express Request
 declare global {
@@ -58,9 +59,20 @@ export class PaymentController {
             
             // No need to override the conversion, just use the properly converted amount
 
+            // If user is logged in, ensure userId is an integer
+            let userId = null;
+            if (req.user && req.user.id) {
+                // Try to parse the user ID as an integer
+                const parsedId = parseInt(req.user.id, 10);
+                // Only use the parsed ID if it's a valid number
+                if (!isNaN(parsedId)) {
+                    userId = parsedId;
+                }
+            }
+
             const order = await Order.create({
                 id: uuidv4(),
-                userId: req.user?.id || uuidv4(),
+                userId: userId,
                 bookId,
                 email,
                 amount: cryptoAmount,
@@ -113,129 +125,6 @@ export class PaymentController {
         }
     }
 
-    // async checkPayment(req: Request<{ orderId: string }>, res: Response): Promise<void> {
-    //     try {
-    //         const order = await Order.findByPk(req.params.orderId);
-    //         console.log("🚀 ~ PaymentController ~ checkPayment ~ order:", req.params.orderId);
-    //         if (!order) {
-    //             res.status(404).json({ success: false, error: 'Order not found' });
-    //             return;
-    //         }
-
-    //         const verification = await this.blockchain.getPaymentByAddress(
-    //             order.payment_address,
-    //             order.payment_currency,
-    //             order.id
-    //         );
-
-    //         if (verification.verified) {
-    //             // Update order with transaction hash if available
-    //             if (verification.txHash) {
-    //                 await Order.update({ txHash: verification.txHash }, { where: { id: order.id } });
-    //                 order.txHash = verification.txHash; // Update the local object as well
-    //             }
-                
-    //             // For Solana payments, we'll let the webhook handle the completion
-    //             // This prevents premature delivery of the book
-    //             if (order.payment_currency.toUpperCase() === 'SOL') {
-    //                 // Just update the status to confirming and let the webhook handle completion
-    //                 await Order.update({ status: 'confirming' }, { where: { id: order.id } });
-                    
-    //                 res.json({
-    //                     success: true,
-    //                     status: 'confirming',
-    //                     message: 'Payment detected, waiting for confirmation via webhook',
-    //                     confirmations: verification.confirmations || 0,
-    //                     explorerUrl: verification.explorerUrl,
-    //                     txHash: verification.txHash
-    //                 });
-    //                 return;
-    //             }
-                
-    //             // For other cryptocurrencies, proceed with the normal flow
-    //             const downloadToken = await this.handleSuccessfulPayment(order);
-    
-    //             res.json({
-    //                 success: true,
-    //                 status: verification.status || 'completed',
-    //                 downloadToken,
-    //                 explorerUrl: verification.explorerUrl,
-    //                 txHash: verification.txHash,
-    //                 completedAt: verification.timestamp ? new Date(verification.timestamp) : new Date()
-    //             });
-    //             return;
-    //         }
-
-    //         res.json({
-    //             success: true,
-    //             status: verification.status || 'awaiting_payment',
-    //             confirmations: verification.confirmations || 0,
-    //             message: verification.message || 'Waiting for payment confirmation'
-    //         });
-
-    //     } catch (error) {
-    //         console.error('Payment verification error:', error);
-    //         res.status(500).json({
-    //             success: false,
-    //             error: 'Payment verification failed',
-    //             details: error instanceof Error ? error.message : String(error)
-    //         });
-    //     }
-    // }
-
-    // private async handleSuccessfulPayment(order: Order): Promise<string> {
-    //     try {
-    //         // Extract the base book ID without any format suffix
-    //         const baseBookId = order.bookId
-    //         console.log("Looking up book with ID:", order.bookId);
-            
-    //         const book = await Book.findByPk(baseBookId);
-    //         if (!book) throw new Error(`Book not found with ID: ${baseBookId} (original: ${order.bookId})`);
-    //         if (!order) throw new Error('Order not found');
-
-    //         // Generate download token
-    //         const downloadTokenObj = await this.download.generateDownloadToken(order.id);
-    //         const downloadToken = downloadTokenObj.get('token');
-
-    //         // Get selected format from order
-    //         const format = order.format.toLowerCase();
-
-    //         // Generate format-specific download link
-    //         const downloadLink = `${process.env.API_URL}/download/${downloadToken}?format=${format}`;
-
-    //         console.log("🚀 ~ handleSuccessfulPayment ~ downloadLink:", downloadLink);
-    //       //Update order
-    //         await Order.update({
-    //             // status: 'completed',
-    //             downloadToken,
-    //             downloadLink,
-    //             // txHash: verification.txHash,
-    //             completedAt: new Date( Date.now())
-    //         }, {
-    //             where: { id: order.id }
-    //         });
-
-    //         // Send email with format-specific link
-    //         const emailBody = `
-    //         Thank you for your purchase!
-            
-    //         Your download link (valid for 24 hours):
-    //         ${format.toUpperCase()} Version: ${downloadLink}
-            
-    //         Transaction Hash: ${order.txHash}
-            
-    //         Note: This link can only be used once.
-    //     `;
-
-    //         await this.email.sendEmail(order.email, 'Your Book Download Link', emailBody);
-
-    //         return downloadToken;
-
-    //     } catch (error) {
-    //         console.error('Error handling successful payment:', error);
-    //         throw error;
-    //     }
-    // }
 }
 
 export default new PaymentController(

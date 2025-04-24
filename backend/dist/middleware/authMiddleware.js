@@ -9,7 +9,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const authenticate = (req, res, next) => {
     console.log('Authentication middleware called');
-    console.log('Headers:', req.headers);
+    // console.log('Headers:', req.headers);
     const token = req.header('Authorization')?.replace('Bearer ', '');
     if (!token) {
         console.log('No token provided');

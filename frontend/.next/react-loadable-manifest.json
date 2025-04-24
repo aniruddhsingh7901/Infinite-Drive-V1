@@ -1,1 +1,10 @@
-{}
+{
+  "app/admin/reset-password/page.tsx -> ../../../components/ResetPasswordComponent": {
+    "id": 256,
+    "files": [
+      "static/chunks/714-b35729310b675707.js",
+      "static/chunks/651-d98f59cef1e9b6bf.js",
+      "static/chunks/256.bb78b1c808da1339.js"
+    ]
+  }
+}

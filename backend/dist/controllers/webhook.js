@@ -73,9 +73,28 @@ class PaymentService {
                         console.warn(`Failed to send order confirmation email for order: ${order.id}`);
                         // Continue with the process even if email fails
                     }
-                    // Send download link email
-                    const downloadLinkSent = await emailService.sendDownloadLink(order.email, downloadLinks, txHash, book.title, [] // No bonus items for now
-                    );
+                    // Prepare bonus items if they exist
+                    const bonusItems = [];
+                    if (book.bonuses && Array.isArray(book.bonuses) && book.bonuses.length > 0) {
+                        for (const bonus of book.bonuses) {
+                            if (bonus.filePath) {
+                                bonusItems.push({
+                                    name: bonus.title,
+                                    link: bonus.filePath
+                                });
+                            }
+                        }
+                    }
+                    // Send download link email with bonus items
+                    const downloadLinkSent = await emailService.sendDownloadLink(order.email, {
+                        bookTitle: book.title,
+                        format: format,
+                        downloadUrl: downloadLink,
+                        expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+                        expiryHours: 48,
+                        txHash: txHash,
+                        bonusItems: bonusItems
+                    });
                     if (!downloadLinkSent) {
                         console.warn(`Failed to send download link email for order: ${order.id}`);
                         // Continue with the process even if email fails

@@ -68,7 +68,7 @@ export default function BookList() {
             {/* Book Section with Decorative Elements */}
             <div className="relative">
               {/* Decorative top element */}
-              <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-blue-400 via-purple-500 to-blue-400 rounded-full"></div>
+              {/* <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 w-24 h-1 bg-gradient-to-r from-blue-400 via-purple-500 to-blue-400 rounded-full"></div> */}
               
               {/* Book Display Component */}
               <BookDisplay bookId={book.id} />

@@ -2,23 +2,44 @@
 import { useState } from 'react';
 import { useAuth } from '../../../context/authContext';
 import Button from '../../../components/Button';
+import axios from 'axios';
 
 export default function AdminLogin() {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [showChangePassword, setShowChangePassword] = useState(false);
   const [message, setMessage] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [requiresOtp, setRequiresOtp] = useState(false);
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       console.log('Attempting login with email:', email);
-      await login(email, password); // This will be passed as 'passwords' in the authContext
+      
+      // If OTP is required, include it in the login request
+      if (requiresOtp) {
+        await login(email, password, otp);
+      } else {
+        const result = await login(email, password);
+        
+        // If login returns requiresOTP flag, show OTP input
+        if (result?.requiresOTP) {
+          setRequiresOtp(true);
+          setMessage('Please enter the OTP sent to your email');
+          setLoading(false);
+          return;
+        }
+      }
+      
       console.log('Login successful');
     } catch (error: any) {
       console.error('Login error:', error);
@@ -29,35 +50,54 @@ export default function AdminLogin() {
     }
   };
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://138.197.21.102:5002';
-      const response = await fetch(`${apiUrl}/auth/change-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          email,
-          oldPassword,
-          newPassword
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Password change failed');
+      const response = await axios.post(`${apiUrl}/auth/forgot-password`, { email: forgotEmail });
+      
+      // For testing purposes, we're getting the token directly from the response
+      // In production, this would be sent via email
+      if (response.data.resetToken) {
+        setResetToken(response.data.resetToken);
+        setShowResetPassword(true);
+        setShowForgotPassword(false);
       }
-
-      setMessage('Password changed successfully');
-      setShowChangePassword(false);
-      setOldPassword('');
-      setNewPassword('');
+      
+      setMessage('If your email is registered, you will receive a password reset link');
     } catch (error: any) {
-      setMessage(error.message);
+      console.error('Forgot password error:', error);
+      setMessage('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword !== confirmPassword) {
+      setMessage('Passwords do not match');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://138.197.21.102:5002';
+      const response = await axios.post(`${apiUrl}/auth/reset-password`, {
+        token: resetToken,
+        newPassword
+      });
+      
+      setMessage('Password reset successful');
+      setShowResetPassword(false);
+      setNewPassword('');
+      setConfirmPassword('');
+      setResetToken('');
+    } catch (error: any) {
+      console.error('Reset password error:', error);
+      setMessage(error.response?.data?.message || 'Password reset failed');
     } finally {
       setLoading(false);
     }
@@ -74,7 +114,71 @@ export default function AdminLogin() {
           </div>
         )}
 
-        {!showChangePassword ? (
+        {showForgotPassword ? (
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Email</label>
+              <input
+                type="email"
+                value={forgotEmail}
+                onChange={(e) => setForgotEmail(e.target.value)}
+                className="w-full p-2 border rounded"
+                required
+              />
+            </div>
+        
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? 'Sending...' : 'Send Reset Link'}
+            </Button>
+        
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(false)}
+              className="mt-2 text-blue-600 hover:text-blue-800 text-sm w-full"
+            >
+              Back to Login
+            </button>
+          </form>
+        ) : showResetPassword ? (
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">New Password</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full p-2 border rounded"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1">Confirm Password</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full p-2 border rounded"
+                required
+              />
+            </div>
+        
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? 'Resetting...' : 'Reset Password'}
+            </Button>
+        
+            <button
+              type="button"
+              onClick={() => {
+                setShowResetPassword(false);
+                setShowForgotPassword(true);
+              }}
+              className="mt-2 text-blue-600 hover:text-blue-800 text-sm w-full"
+            >
+              Back to Forgot Password
+            </button>
+          </form>
+        ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">Email</label>
@@ -97,6 +201,20 @@ export default function AdminLogin() {
                 required
               />
             </div>
+            
+            {requiresOtp && (
+              <div>
+                <label className="block text-sm font-medium mb-1">OTP Code</label>
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  className="w-full p-2 border rounded"
+                  required
+                  placeholder="Enter the 6-digit code"
+                />
+              </div>
+            )}
 
             <Button type="submit" disabled={loading} className="w-full">
               {loading ? 'Logging in...' : 'Login'}
@@ -104,56 +222,10 @@ export default function AdminLogin() {
 
             <button
               type="button"
-              onClick={() => setShowChangePassword(true)}
+              onClick={() => setShowForgotPassword(true)}
               className="mt-2 text-blue-600 hover:text-blue-800 text-sm w-full"
             >
-              Change Password
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handlePasswordChange} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-2 border rounded"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Current Password</label>
-              <input
-                type="password"
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-                className="w-full p-2 border rounded"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">New Password</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full p-2 border rounded"
-                required
-              />
-            </div>
-
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Changing Password...' : 'Change Password'}
-            </Button>
-
-            <button
-              type="button"
-              onClick={() => setShowChangePassword(false)}
-              className="mt-2 text-blue-600 hover:text-blue-800 text-sm w-full"
-            >
-              Back to Login
+              Forgot Password?
             </button>
           </form>
         )}

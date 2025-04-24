@@ -7,6 +7,7 @@ import DownloadToken from './tokenModel';
 import CryptoWallet from './cryptoWalletModel';
 import Visitor from './visitorModel';
 import AbandonedCart from './abandonedCartModel';
+import AuthToken from './authTokenModel';
 
 // Define associations
 Book.hasMany(Order, { foreignKey: 'bookId', as: 'books' });
@@ -16,6 +17,10 @@ Order.belongsTo(Book, { foreignKey: 'bookId', as: 'book' });
 User.hasMany(Order, { foreignKey: 'userId' });
 Order.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
+// Add User-AuthToken association
+User.hasMany(AuthToken, { foreignKey: 'userId' });
+AuthToken.belongsTo(User, { foreignKey: 'userId' });
+
 // Add Book-AbandonedCart association
 Book.hasMany(AbandonedCart, { foreignKey: 'bookId', as: 'abandonedCarts' });
 AbandonedCart.belongsTo(Book, { foreignKey: 'bookId', as: 'book' });
@@ -23,14 +28,13 @@ AbandonedCart.belongsTo(Book, { foreignKey: 'bookId', as: 'book' });
 // Initialize models
 const initializeModels = async () => {
     try {
-        // Use alter: true to update the schema without dropping tables
-        await sequelize.sync({ alter: true });
-        console.log('Database synchronized and schema updated');
+        // Do not use alter: true to avoid modifying existing tables
+        await sequelize.sync({ force: false, alter: false });
+        console.log('Database synchronized without schema changes');
     } catch (error) {
         console.error('Error synchronizing database:', error);
     }
 };
 
-initializeModels();
-
-export { User, Book, Order, DownloadToken, CryptoWallet, Visitor, AbandonedCart };
+// Export the initializeModels function to be called from app.ts
+export { User, Book, Order, DownloadToken, CryptoWallet, Visitor, AbandonedCart, AuthToken, initializeModels };

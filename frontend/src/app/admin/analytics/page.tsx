@@ -56,9 +56,12 @@ export default function AnalyticsDashboard() {
       const token = localStorage.getItem('token');
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       
-      const response = await fetch(`${baseUrl}/admin/analytics?period=${period}`, {
+      const response = await fetch(`${baseUrl}/admin/analytics?period=${period}&t=${Date.now()}`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
         }
       });
       

@@ -83,28 +83,51 @@ export default function CustomersManagement() {
     }
   };
 
-  const handleExportEmails = () => {
+  const handleExportEmails = async (format = 'csv') => {
     setExportLoading(true);
     
     try {
-      // Create CSV content
-      const csvContent = 'data:text/csv;charset=utf-8,' + 
-        'Email,Total Orders,Total Spent\n' + 
-        customers.map(customer => 
-          `${customer.email},${customer.totalOrders},${customer.totalSpent}`
-        ).join('\n');
+      const token = localStorage.getItem('token');
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
       
-      // Create download link
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement('a');
-      link.setAttribute('href', encodedUri);
-      link.setAttribute('download', 'customer_emails.csv');
-      document.body.appendChild(link);
+      // Make API request to export emails
+      const response = await axios.get(`${baseUrl}/admin/customers/export?format=${format}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        responseType: format === 'json' ? 'json' : 'blob' // Use blob for CSV and TXT
+      });
       
-      // Trigger download
-      link.click();
-      document.body.removeChild(link);
-      
+      if (format === 'json') {
+        // For JSON format, display the data or save it
+        console.log('Exported emails:', response.data);
+        
+        // Create JSON file for download
+        const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'customer_emails.json';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        // For CSV and TXT formats, create a download link
+        const contentType = format === 'csv' ? 'text/csv' : 'text/plain';
+        const filename = `customer_emails.${format}`;
+        
+        // Create a blob from the response data
+        const blob = new Blob([response.data], { type: contentType });
+        const url = URL.createObjectURL(blob);
+        
+        // Create and trigger download link
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     } catch (error) {
       console.error('Error exporting emails:', error);
       setError('Failed to export emails. Please try again.');
@@ -128,13 +151,47 @@ export default function CustomersManagement() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Customer Management</h1>
         <div className="flex space-x-2">
-          <Button 
-            onClick={handleExportEmails}
-            className="bg-green-600 hover:bg-green-700"
-            disabled={exportLoading}
-          >
-            {exportLoading ? 'Exporting...' : 'Export Email List'}
-          </Button>
+          <div className="relative group">
+            <Button 
+              onClick={() => handleExportEmails('csv')}
+              className="bg-green-600 hover:bg-green-700 flex items-center"
+              disabled={exportLoading}
+            >
+              {exportLoading ? 'Exporting...' : (
+                <>
+                  <span>Export Email List</span>
+                  <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </>
+              )}
+            </Button>
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border hidden group-hover:block">
+              <div className="py-1">
+                <button
+                  onClick={() => handleExportEmails('csv')}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  disabled={exportLoading}
+                >
+                  Export as CSV
+                </button>
+                <button
+                  onClick={() => handleExportEmails('txt')}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  disabled={exportLoading}
+                >
+                  Export as TXT
+                </button>
+                <button
+                  onClick={() => handleExportEmails('json')}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  disabled={exportLoading}
+                >
+                  Export as JSON
+                </button>
+              </div>
+            </div>
+          </div>
           <Button 
             onClick={fetchCustomers}
             className="bg-blue-600 hover:bg-blue-700"

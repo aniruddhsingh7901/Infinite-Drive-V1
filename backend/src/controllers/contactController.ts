@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import emailService from '../services/emailService';
+import sendgridEmailService from '../services/sendgridEmailService';
 
 /**
  * Send an email from the contact form
@@ -76,11 +77,18 @@ This email was sent from the contact form on infinitedriven.com
 </div>
 `;
 
-    // Send the email
-    const emailSent = await emailService.sendEmail(recipient, emailSubject, emailBody, htmlBody);
+    // Send the email using SendGrid (preferred for cloud environments like DigitalOcean)
+    // Fall back to regular SMTP if SendGrid fails
+    let emailSent = await sendgridEmailService.sendEmail(recipient, emailSubject, htmlBody || emailBody);
+    
+    // If SendGrid fails, try the original SMTP service as fallback
+    if (!emailSent) {
+      console.log('SendGrid email failed, trying SMTP fallback...');
+      emailSent = await emailService.sendEmail(recipient, emailSubject, htmlBody || emailBody);
+    }
 
     if (emailSent) {
-      // Send an auto-reply to the user
+      // Send an auto-reply to the user using SendGrid
       const autoReplySubject = 'Thank you for contacting Infinite Drive';
       const autoReplyBody = `
 Dear ${name},
@@ -122,7 +130,13 @@ The Infinite Drive Support Team
 </div>
 `;
 
-      await emailService.sendEmail(email, autoReplySubject, autoReplyBody, autoReplyHtml);
+      // Try SendGrid first, fall back to SMTP if needed
+      let autoReplySent = await sendgridEmailService.sendEmail(email, autoReplySubject, autoReplyHtml || autoReplyBody);
+      
+      if (!autoReplySent) {
+        console.log('SendGrid auto-reply failed, trying SMTP fallback...');
+        await emailService.sendEmail(email, autoReplySubject, autoReplyHtml || autoReplyBody);
+      }
 
       return res.status(200).json({
         success: true,

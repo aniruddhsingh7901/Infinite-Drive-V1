@@ -6,7 +6,7 @@ dotenv.config();
 
 export const authenticate = (req: Request, res: Response, next: NextFunction) => {
   console.log('Authentication middleware called');
-  console.log('Headers:', req.headers);
+  // console.log('Headers:', req.headers);
   
   const token = req.header('Authorization')?.replace('Bearer ', '');
   if (!token) {

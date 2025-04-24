@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/authContext';
@@ -11,6 +11,11 @@ interface DashboardStats {
   activeOrders: number;
   newCustomers: number;
   revenueGrowth: number;
+  conversionRate?: number;
+  completedOrders?: number;
+  pendingOrders?: number;
+  dailyOrders?: any[];
+  recentOrders?: any[];
 }
 
 interface RecentOrder {
@@ -33,6 +38,7 @@ export default function AdminDashboard() {
   });
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const wsRef = useRef<WebSocket | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -47,8 +53,72 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (user) {
       fetchDashboardData();
+      setupWebSocket();
     }
+    
+    // Cleanup WebSocket connection when component unmounts
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
   }, [user]);
+  
+  const setupWebSocket = () => {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    const wsUrl = baseUrl.replace(/^http/, 'ws') + '/ws/admin';
+    
+    // Close any existing connection
+    if (wsRef.current) {
+      wsRef.current.close();
+    }
+    
+    // Create new WebSocket connection
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+    
+    ws.onopen = () => {
+      console.log('WebSocket connection established');
+      // Authenticate as admin
+      ws.send(JSON.stringify({ 
+        type: 'auth', 
+        role: 'admin',
+        token: localStorage.getItem('token')
+      }));
+    };
+    
+    ws.onmessage = (event) => {
+      try {
+        const message = JSON.parse(event.data);
+        console.log('WebSocket message received:', message);
+        
+        // Handle different message types
+        if (message.event === 'order_update') {
+          // Refresh dashboard data when an order is updated
+          fetchDashboardData();
+        } else if (message.event === 'dashboard_update') {
+          // Refresh dashboard data when dashboard update is triggered
+          fetchDashboardData();
+        }
+      } catch (error) {
+        console.error('Error processing WebSocket message:', error);
+      }
+    };
+    
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+    
+    ws.onclose = () => {
+      console.log('WebSocket connection closed');
+      // Attempt to reconnect after a delay
+      setTimeout(() => {
+        if (user) {
+          setupWebSocket();
+        }
+      }, 5000);
+    };
+  };
 
   const fetchDashboardData = async () => {
     setIsLoading(true);
@@ -68,26 +138,50 @@ export default function AdminDashboard() {
       }
       
       // Fetch recent orders
-      const ordersResponse = await axios.get(`${baseUrl}/orders/all-orders`, {
+      const ordersResponse = await axios.get(`${baseUrl}/admin/orders/recent`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       
       if (ordersResponse.data && Array.isArray(ordersResponse.data)) {
-        // Get the 5 most recent orders
-        const recent = ordersResponse.data
-          .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-          .slice(0, 5)
-          .map((order: any) => ({
-            id: order.id,
-            customerEmail: order.email,
-            bookTitle: order.bookId, // Ideally this would be the book title
-            status: order.status,
-            amount: order.amount
-          }));
+        // Process the recent orders
+        const recent = ordersResponse.data.map((order: any) => ({
+          id: order.id,
+          customerEmail: order.customerEmail || order.email,
+          bookTitle: order.bookTitle || order.bookId,
+          status: order.status,
+          amount: order.amount
+        }));
         
         setRecentOrders(recent);
+      } else {
+        // Fallback to direct orders endpoint if admin/orders/recent fails
+        try {
+          const fallbackResponse = await axios.get(`${baseUrl}/orders/all-orders`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          if (fallbackResponse.data && Array.isArray(fallbackResponse.data)) {
+            // Get the 5 most recent orders
+            const recent = fallbackResponse.data
+              .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              .slice(0, 5)
+              .map((order: any) => ({
+                id: order.id,
+                customerEmail: order.email,
+                bookTitle: order.bookId,
+                status: order.status,
+                amount: order.amount
+              }));
+            
+            setRecentOrders(recent);
+          }
+        } catch (fallbackError) {
+          console.error('Error fetching orders from fallback endpoint:', fallbackError);
+        }
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -118,9 +212,16 @@ export default function AdminDashboard() {
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="text-sm text-gray-500">Total Sales</div>
           <div className="mt-2 flex items-baseline justify-between">
-            <div className="text-2xl font-semibold">${typeof stats.totalSales === 'string' ? parseFloat(stats.totalSales).toFixed(2) : stats.totalSales.toFixed(2)}</div>
-            <div className={`text-sm ${stats.revenueGrowth >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {stats.revenueGrowth >= 0 ? '+' : ''}{typeof stats.revenueGrowth === 'string' ? parseFloat(stats.revenueGrowth).toFixed(1) : stats.revenueGrowth.toFixed(1)}%
+            <div className="text-2xl font-semibold">
+              ${typeof stats.totalSales === 'string' 
+                ? parseFloat(stats.totalSales).toFixed(2) 
+                : (stats.totalSales || 0).toFixed(2)}
+            </div>
+            <div className={`text-sm ${(stats.revenueGrowth || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {(stats.revenueGrowth || 0) >= 0 ? '+' : ''}
+              {typeof stats.revenueGrowth === 'string' 
+                ? parseFloat(stats.revenueGrowth).toFixed(1) 
+                : (stats.revenueGrowth || 0).toFixed(1)}%
             </div>
           </div>
         </div>
@@ -128,7 +229,7 @@ export default function AdminDashboard() {
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="text-sm text-gray-500">Active Orders</div>
           <div className="mt-2 flex items-baseline justify-between">
-            <div className="text-2xl font-semibold">{stats.activeOrders}</div>
+            <div className="text-2xl font-semibold">{stats.activeOrders || 0}</div>
             <div className="text-sm text-green-500">+0%</div>
           </div>
         </div>
@@ -136,7 +237,7 @@ export default function AdminDashboard() {
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="text-sm text-gray-500">New Customers</div>
           <div className="mt-2 flex items-baseline justify-between">
-            <div className="text-2xl font-semibold">{stats.newCustomers}</div>
+            <div className="text-2xl font-semibold">{stats.newCustomers || 0}</div>
             <div className="text-sm text-green-500">+0%</div>
           </div>
         </div>
@@ -144,7 +245,9 @@ export default function AdminDashboard() {
         <div className="bg-white p-6 rounded-lg shadow-sm">
           <div className="text-sm text-gray-500">Conversion Rate</div>
           <div className="mt-2 flex items-baseline justify-between">
-            <div className="text-2xl font-semibold">3.2%</div>
+            <div className="text-2xl font-semibold">
+              {stats.conversionRate ? `${stats.conversionRate.toFixed(1)}%` : '3.2%'}
+            </div>
             <div className="text-sm text-green-500">+0%</div>
           </div>
         </div>

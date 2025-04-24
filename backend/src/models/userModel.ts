@@ -6,6 +6,7 @@ class User extends Model {
     public email!: string;
     public password!: string;
     public role!: string;
+    public otpEnabled!: boolean;
 
     // timestamps!
     public readonly createdAt!: Date;
@@ -15,7 +16,7 @@ class User extends Model {
 User.init(
     {
         id: {
-            type: DataTypes.INTEGER.UNSIGNED,
+            type: DataTypes.INTEGER,
             autoIncrement: true,
             primaryKey: true,
         },
@@ -35,6 +36,11 @@ User.init(
             type: DataTypes.STRING,
             allowNull: false,
             defaultValue: 'user',
+        },
+        otpEnabled: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
         },
     },
     {

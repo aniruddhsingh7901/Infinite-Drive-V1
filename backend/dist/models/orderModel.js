@@ -6,11 +6,54 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // src/models/orderModel.ts
 const sequelize_1 = require("sequelize");
 const database_1 = __importDefault(require("../config/database"));
+const app_1 = require("../app");
 class Order extends sequelize_1.Model {
     static async updateOrderStatus(orderId, update) {
-        return await this.update(update, {
+        const [numUpdated, updatedOrders] = await this.update(update, {
             where: { id: orderId },
             returning: true
+        });
+        if (numUpdated > 0 && updatedOrders && updatedOrders.length > 0) {
+            const updatedOrder = updatedOrders[0];
+            // Broadcast the update to admin clients
+            try {
+                app_1.webSocketService.broadcastOrderUpdate(updatedOrder);
+                app_1.webSocketService.broadcastDashboardUpdate();
+            }
+            catch (error) {
+                console.error('Error broadcasting order update:', error);
+            }
+        }
+        return [numUpdated, updatedOrders];
+    }
+    static async findRecentOrders(limit = 5) {
+        return await this.findAll({
+            order: [['createdAt', 'DESC']],
+            limit
+        });
+    }
+    static async findPendingOrders() {
+        return await this.findAll({
+            where: { status: 'pending' },
+            order: [['createdAt', 'DESC']]
+        });
+    }
+    static async findCompletedOrders() {
+        return await this.findAll({
+            where: { status: 'completed' },
+            order: [['createdAt', 'DESC']]
+        });
+    }
+    static async getDailyOrders() {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return await this.findAll({
+            where: {
+                createdAt: {
+                    [sequelize_1.Op.gte]: today
+                }
+            },
+            order: [['createdAt', 'DESC']]
         });
     }
 }
@@ -21,8 +64,8 @@ Order.init({
         primaryKey: true,
     },
     userId: {
-        type: sequelize_1.DataTypes.UUID,
-        allowNull: false,
+        type: sequelize_1.DataTypes.INTEGER,
+        allowNull: true,
     },
     bookId: {
         type: sequelize_1.DataTypes.STRING,

@@ -163,6 +163,7 @@ export const addBook = async (req: Request, res: Response, next: NextFunction): 
                                             try {
                                                 const coverImageResult = await uploadToCloudinary(coverImageFile.buffer, {
                                                     folder: 'bonus-covers',
+                                                    public_id: `bonus-cover-${uuidv4()}`,
                                                     timeout: 300000 // 300 seconds
                                                 });
                                                 matchingBonus.coverImagePath = coverImageResult;
@@ -341,9 +342,10 @@ export const updateBook = async (req: Request, res: Response, next: NextFunction
                                 console.log("Found matching bonus cover image:", matchingBonusCover.title, "for file:", bonusFile.originalname);
                                 
                                 try {
-                                    // Upload the cover image
+                                    // Upload the cover image with a unique public_id to prevent overriding
                                     const coverImageResult = await uploadToCloudinary(bonusFile.buffer, {
                                         folder: 'bonus-covers',
+                                        public_id: `bonus-cover-${uuidv4()}`,
                                         timeout: 300000 // 300 seconds
                                     });
                                     

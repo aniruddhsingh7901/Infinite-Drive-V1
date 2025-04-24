@@ -64,7 +64,15 @@ const handleSuccessfulPayment = async (order, txHash) => {
             // Continue with the process even if email fails
         }
         // Send download link email
-        const downloadLinkSent = await emailService.sendDownloadLink(order.email, downloadLinks, txHash, book.title, bonusItems);
+        const downloadLinkSent = await emailService.sendDownloadLink(order.email, {
+            bookTitle: book.title,
+            format: format,
+            downloadUrl: downloadLink,
+            expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+            expiryHours: 48,
+            txHash: txHash,
+            bonusItems: bonusItems
+        });
         if (!downloadLinkSent) {
             console.warn(`Failed to send download link email for order: ${order.id}`);
             // Continue with the process even if email fails

@@ -10,6 +10,7 @@ router.get('/dashboard/stats', authMiddleware_1.authenticate, adminDashControlle
 router.get('/dashboard-stats', authMiddleware_1.authenticate, adminDashController_1.getDashboardStats); // Add this for backward compatibility
 // Customers
 router.get('/customers', authMiddleware_1.authenticate, adminDashController_1.getCustomers);
+router.get('/customers/export', authMiddleware_1.authenticate, adminDashController_1.exportCustomerEmails);
 router.get('/customers/recent', authMiddleware_1.authenticate, async (req, res) => {
     try {
         console.log('Fetching recent customers...');
@@ -56,6 +57,58 @@ router.get('/customers/recent', authMiddleware_1.authenticate, async (req, res) 
     }
 });
 // Orders
+router.get('/orders/all', authMiddleware_1.authenticate, async (req, res) => {
+    try {
+        console.log('Fetching all orders...');
+        // Get real order data from the database
+        const { Order, Book, User } = require('../models');
+        // Get all orders without including the User model to avoid type mismatch
+        const allOrders = await Order.findAll({
+            order: [['createdAt', 'DESC']],
+            include: [
+                {
+                    model: Book,
+                    as: 'book',
+                    attributes: ['title']
+                }
+            ]
+        });
+        if (allOrders && allOrders.length > 0) {
+            const formattedOrders = allOrders.map((order) => {
+                // Get book title if available
+                let bookTitle = order.bookId;
+                if (order.book && order.book.title) {
+                    bookTitle = order.book.title;
+                }
+                // Get customer email
+                let customerEmail = order.email;
+                if (order.user && order.user.email) {
+                    customerEmail = order.user.email;
+                }
+                return {
+                    id: order.id,
+                    customerEmail: customerEmail,
+                    bookTitle: bookTitle,
+                    bookId: order.bookId,
+                    format: order.format,
+                    amount: order.amount,
+                    paymentMethod: order.payment_currency,
+                    status: order.status || 'pending',
+                    createdAt: order.createdAt,
+                    txHash: order.txHash
+                };
+            });
+            return res.status(200).json(formattedOrders);
+        }
+        else {
+            return res.status(200).json([]);
+        }
+    }
+    catch (error) {
+        console.error('Error fetching all orders:', error);
+        res.status(500).json({ message: 'Error fetching all orders' });
+    }
+});
 router.get('/orders/recent', authMiddleware_1.authenticate, async (req, res) => {
     try {
         console.log('Fetching recent orders...');
@@ -99,51 +152,9 @@ router.get('/orders/recent', authMiddleware_1.authenticate, async (req, res) => 
             console.error('Database error fetching recent orders:', dbError);
             // Continue to fallback data
         }
-        // Fallback to sample data if no orders found or error occurred
-        console.log('Using sample order data');
-        const sampleOrders = [
-            {
-                id: 'order-1',
-                customerEmail: 'john.smith@example.com',
-                bookId: 'Infinite Drive: Complete Package',
-                amount: 49.99,
-                status: 'completed',
-                createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2) // 2 days ago
-            },
-            {
-                id: 'order-2',
-                customerEmail: 'sarah.johnson@example.com',
-                bookId: 'Infinite Drive: Basic Edition',
-                amount: 29.99,
-                status: 'completed',
-                createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3) // 3 days ago
-            },
-            {
-                id: 'order-3',
-                customerEmail: 'michael.chen@example.com',
-                bookId: 'Infinite Drive: Premium Edition',
-                amount: 39.99,
-                status: 'completed',
-                createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 4) // 4 days ago
-            },
-            {
-                id: 'order-4',
-                customerEmail: 'emily.rodriguez@example.com',
-                bookId: 'Infinite Drive: Complete Package',
-                amount: 49.99,
-                status: 'processing',
-                createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1) // 1 day ago
-            },
-            {
-                id: 'order-5',
-                customerEmail: 'david.wilson@example.com',
-                bookId: 'Infinite Drive: Basic Edition',
-                amount: 29.99,
-                status: 'completed',
-                createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12) // 12 hours ago
-            }
-        ];
-        return res.status(200).json(sampleOrders);
+        // If no orders found, return empty array
+        console.log('No recent orders found');
+        return res.status(200).json([]);
     }
     catch (error) {
         console.error('Error fetching recent orders:', error);
@@ -165,7 +176,7 @@ router.get('/reviews', authMiddleware_1.authenticate, async (req, res) => {
         console.log('Fetching reviews...');
         // Get real review data from the database
         const { Order, User, Book } = require('../models');
-        // Get all orders with ratings
+        // Get all orders with ratings without including the User model to avoid type mismatch
         const orders = await Order.findAll({
             where: {
                 rating: {
@@ -173,11 +184,6 @@ router.get('/reviews', authMiddleware_1.authenticate, async (req, res) => {
                 }
             },
             include: [
-                {
-                    model: User,
-                    as: 'user',
-                    attributes: ['email', 'id']
-                },
                 {
                     model: Book,
                     attributes: ['title']
@@ -205,81 +211,10 @@ router.get('/reviews', authMiddleware_1.authenticate, async (req, res) => {
                 bookId: order.bookId
             };
         });
-        // If no reviews found, return sample reviews
+        // If no reviews found, return empty array
         if (reviews.length === 0) {
-            const sampleReviews = [
-                {
-                    id: '1',
-                    orderId: 'order-1',
-                    userId: 'user-1',
-                    name: 'John Smith',
-                    email: 'john.smith@example.com',
-                    rating: 5,
-                    date: '2025-01-15T00:00:00.000Z',
-                    title: 'Life-changing content',
-                    content: 'The Infinite Drive e-book has completely transformed my approach to personal development. The strategies are practical and easy to implement in daily life.',
-                    verified: true,
-                    approved: true,
-                    bookId: 'book-1'
-                },
-                {
-                    id: '2',
-                    orderId: 'order-2',
-                    userId: 'user-2',
-                    name: 'Sarah Johnson',
-                    email: 'sarah.johnson@example.com',
-                    rating: 5,
-                    date: '2025-01-20T00:00:00.000Z',
-                    title: 'Exactly what I needed',
-                    content: 'I\'ve read many self-help books before, but this one stands out. The author provides clear, actionable steps rather than vague concepts.',
-                    verified: true,
-                    approved: true,
-                    bookId: 'book-1'
-                },
-                {
-                    id: '3',
-                    orderId: 'order-3',
-                    userId: 'user-3',
-                    name: 'Michael Chen',
-                    email: 'michael.chen@example.com',
-                    rating: 4,
-                    date: '2025-02-05T00:00:00.000Z',
-                    title: 'Great value for the price',
-                    content: 'The Self-Discipline section alone was worth the purchase. I\'ve struggled with consistency for years, and the techniques in this book have helped me establish a solid morning routine.',
-                    verified: true,
-                    approved: true,
-                    bookId: 'book-1'
-                },
-                {
-                    id: '4',
-                    orderId: 'order-4',
-                    userId: 'user-4',
-                    name: 'Emily Rodriguez',
-                    email: 'emily.rodriguez@example.com',
-                    rating: 5,
-                    date: '2025-02-10T00:00:00.000Z',
-                    title: 'Exceeded my expectations',
-                    content: 'I was skeptical at first, but decided to give it a try. The content is well-researched and presented in an engaging way.',
-                    verified: true,
-                    approved: false,
-                    bookId: 'book-2'
-                },
-                {
-                    id: '5',
-                    orderId: 'order-5',
-                    userId: 'user-5',
-                    name: 'David Wilson',
-                    email: 'david.wilson@example.com',
-                    rating: 5,
-                    date: '2025-02-18T00:00:00.000Z',
-                    title: 'Transformative experience',
-                    content: 'This isn\'t just another self-help book - it\'s a complete system for personal transformation. The combination of the e-book, audio files, and video content creates a powerful learning experience.',
-                    verified: true,
-                    approved: true,
-                    bookId: 'book-2'
-                }
-            ];
-            return res.status(200).json(sampleReviews);
+            console.log('No reviews found');
+            return res.status(200).json([]);
         }
         return res.status(200).json(reviews);
     }
@@ -364,7 +299,7 @@ router.get('/public/reviews', async (req, res) => {
         console.log('Fetching public reviews...');
         // Get real review data from the database
         const { Order, User, Book } = require('../models');
-        // Get all orders with ratings that are approved
+        // Get all orders with ratings that are approved without including the User model to avoid type mismatch
         const orders = await Order.findAll({
             where: {
                 rating: {
@@ -373,11 +308,6 @@ router.get('/public/reviews', async (req, res) => {
                 reviewApproved: true
             },
             include: [
-                {
-                    model: User,
-                    as: 'user',
-                    attributes: ['email']
-                },
                 {
                     model: Book,
                     as: 'book',
@@ -400,56 +330,10 @@ router.get('/public/reviews', async (req, res) => {
                 verified: true
             };
         });
-        // If no reviews found, return sample reviews
+        // If no reviews found, return empty array
         if (reviews.length === 0) {
-            const sampleReviews = [
-                {
-                    id: '1',
-                    name: 'John Smith',
-                    rating: 5,
-                    date: '2025-01-15',
-                    title: 'Life-changing content',
-                    content: 'The Infinite Drive e-book has completely transformed my approach to personal development. The strategies are practical and easy to implement in daily life. I\'ve seen significant improvements in my productivity and mindset in just a few weeks.',
-                    verified: true
-                },
-                {
-                    id: '2',
-                    name: 'Sarah Johnson',
-                    rating: 5,
-                    date: '2025-01-20',
-                    title: 'Exactly what I needed',
-                    content: 'I\'ve read many self-help books before, but this one stands out. The author provides clear, actionable steps rather than vague concepts. The bonus audio content was also extremely valuable for reinforcing the key ideas during my commute.',
-                    verified: true
-                },
-                {
-                    id: '3',
-                    name: 'Michael Chen',
-                    rating: 4,
-                    date: '2025-02-05',
-                    title: 'Great value for the price',
-                    content: 'The Self-Discipline section alone was worth the purchase. I\'ve struggled with consistency for years, and the techniques in this book have helped me establish a solid morning routine for the first time in my life. Highly recommended!',
-                    verified: true
-                },
-                {
-                    id: '4',
-                    name: 'Emily Rodriguez',
-                    rating: 5,
-                    date: '2025-02-10',
-                    title: 'Exceeded my expectations',
-                    content: 'I was skeptical at first, but decided to give it a try. The content is well-researched and presented in an engaging way. I especially appreciated the practical exercises at the end of each chapter. The results speak for themselves!',
-                    verified: true
-                },
-                {
-                    id: '5',
-                    name: 'David Wilson',
-                    rating: 5,
-                    date: '2025-02-18',
-                    title: 'Transformative experience',
-                    content: 'This isn\'t just another self-help book - it\'s a complete system for personal transformation. The combination of the e-book, audio files, and video content creates a powerful learning experience. I\'ve recommended it to all my friends.',
-                    verified: true
-                }
-            ];
-            return res.status(200).json(sampleReviews);
+            console.log('No public reviews found');
+            return res.status(200).json([]);
         }
         return res.status(200).json(reviews);
     }
