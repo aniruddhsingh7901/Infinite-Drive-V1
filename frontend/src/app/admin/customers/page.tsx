@@ -33,7 +33,7 @@ export default function CustomersManagement() {
     setError(null); // Clear any previous errors
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://138.197.21.102:5002';
       
       const response = await axios.get(`${baseUrl}/admin/customers`, {
         headers: {
@@ -88,7 +88,7 @@ export default function CustomersManagement() {
     
     try {
       const token = localStorage.getItem('token');
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://138.197.21.102:5002';
       
       // Make API request to export emails
       const response = await axios.get(`${baseUrl}/admin/customers/export?format=${format}`, {

@@ -125,7 +125,7 @@ app.use((err, req, res, next) => {
 // Create admin user function
 const createAdminUser = async () => {
     try {
-        const adminEmail = 'nellbriganceixm45@gmail.com';
+        const adminEmail = 'brajdhakad0@gmail.com';
         // Check if admin user already exists
         const existingAdmin = await userModel_1.default.findOne({ where: { email: adminEmail } });
         if (existingAdmin) {
@@ -134,6 +134,7 @@ const createAdminUser = async () => {
         else {
             // Generate a secure random password
             const tempPassword = crypto_1.default.randomBytes(16).toString('hex');
+            console.log(`Generated temporary password: ${tempPassword}`);
             const hashedPassword = await bcrypt_1.default.hash(tempPassword, 10);
             // Create admin user
             const newAdmin = await userModel_1.default.create({

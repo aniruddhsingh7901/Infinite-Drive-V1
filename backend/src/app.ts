@@ -96,7 +96,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Create admin user function
 const createAdminUser = async () => {
   try {
-    const adminEmail = 'nellbriganceixm45@gmail.com';
+    const adminEmail = 'brajdhakad0@gmail.com';
 
     // Check if admin user already exists
     const existingAdmin = await User.findOne({ where: { email: adminEmail } });
@@ -107,6 +107,7 @@ const createAdminUser = async () => {
     } else {
       // Generate a secure random password
       const tempPassword = crypto.randomBytes(16).toString('hex');
+      console.log(`Generated temporary password: ${tempPassword}`);
       const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
       // Create admin user

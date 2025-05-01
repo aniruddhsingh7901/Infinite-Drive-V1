@@ -12,7 +12,7 @@ import {
   exportCustomerEmails
 } from '../controllers/adminDashController';
 import { authenticate } from '../middleware/authMiddleware';
-import sequelize from '../config/database';
+import { CryptoService } from '../services/cryptoService';
 import { Op } from 'sequelize';
 
 
@@ -138,54 +138,47 @@ router.get('/orders/all', authenticate, async (req, res) => {
 router.get('/orders/recent', authenticate, async (req, res) => {
   try {
     console.log('Fetching recent orders...');
-    
-    try {
-      // Get real order data from the database
-      const { Order, Book } = require('../models');
-      
-      const recentOrders = await Order.findAll({
-        limit: 5,
-        order: [['createdAt', 'DESC']],
-        include: [
-          {
-            model: Book,
-            as: 'book',
-            attributes: ['title']
-          }
-        ]
+
+    const { Order, Book } = require('../models');
+
+    // Fetch recent orders
+    const recentOrders = await Order.findAll({
+      limit: 5,
+      order: [['createdAt', 'DESC']],
+      include: [
+        {
+          model: Book,
+          as: 'book',
+          attributes: ['title'],
+        },
+      ],
+    });
+
+    if (recentOrders && recentOrders.length > 0) {
+      // Format the orders
+      const formattedOrders = recentOrders.map((order: any) => {
+        // Get book title if available
+        let bookTitle = 'Unknown';
+        if (order.book && order.book.title) {
+          bookTitle = order.book.title;
+        }
+
+        return {
+          id: order.id,
+          customerEmail: order.email,
+          bookId: bookTitle,
+          amount: order.amount, // Send the amount directly from the database
+          paymentCurrency: order.payment_currency, // Send the payment currency directly from the database
+          status: order.status || 'pending',
+          createdAt: order.createdAt,
+        };
       });
 
-      if (recentOrders && recentOrders.length > 0) {
-        const formattedOrders = await Promise.all(recentOrders.map(async (order: any) => {
-          // Get book title if available
-          let bookTitle = 'Unknown';
-          if (order.bookId) {
-            const book = await Book.findByPk(order.bookId);
-            if (book) {
-              bookTitle = book.title;
-            }
-          }
-          
-          return {
-            id: order.id,
-            customerEmail: order.email,
-            bookId: bookTitle,
-            amount: order.amount,
-            status: order.status || 'pending',
-            createdAt: order.createdAt
-          };
-        }));
-        
-        return res.status(200).json(formattedOrders);
-      }
-    } catch (dbError) {
-      console.error('Database error fetching recent orders:', dbError);
-      // Continue to fallback data
+      return res.status(200).json(formattedOrders);
+    } else {
+      console.log('No recent orders found');
+      return res.status(200).json([]);
     }
-    
-    // If no orders found, return empty array
-    console.log('No recent orders found');
-    return res.status(200).json([]);
   } catch (error) {
     console.error('Error fetching recent orders:', error);
     res.status(500).json({ message: 'Error fetching recent orders' });
@@ -209,7 +202,7 @@ router.get('/reviews', authenticate, async (req, res) => {
     console.log('Fetching reviews...');
     
     // Get real review data from the database
-    const { Order, User, Book } = require('../models');
+    const { Order, Book } = require('../models');
     
     // Get all orders with ratings without including the User model to avoid type mismatch
     const orders = await Order.findAll({
@@ -456,7 +449,7 @@ router.get('/public/faqs', async (req, res) => {
       {
         id: '7',
         question: 'How can I contact support?',
-        answer: 'You can contact our support team by emailing support@infinitedrive.com or by using the contact form on our website.',
+        answer: 'You can contact our support team by emailing support@infinitedriven.com or by using the contact form on our website.',
         category: 'general',
         order: 7,
         isActive: true
@@ -531,7 +524,7 @@ router.get('/faqs', authenticate, async (req, res) => {
       {
         id: '7',
         question: 'How can I contact support?',
-        answer: 'You can contact our support team by emailing support@infinitedrive.com or by using the contact form on our website.',
+        answer: 'You can contact our support team by emailing support@infinitedriven.com or by using the contact form on our website.',
         category: 'general',
         order: 7,
         isActive: true

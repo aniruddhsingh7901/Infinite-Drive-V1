@@ -116,7 +116,7 @@ export default function FAQSection() {
       {
         id: '7',
         question: 'How can I contact support?',
-        answer: 'You can contact our support team by emailing support@infinitedrive.com or by using the contact form on our website.',
+        answer: 'You can contact our support team by emailing support@infinitedriven.com or by using the contact form on our website.',
         category: 'general',
         order: 7,
         isActive: true

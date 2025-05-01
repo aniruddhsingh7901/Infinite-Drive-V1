@@ -12,67 +12,33 @@ const visitorAnalyticsService_1 = __importDefault(require("../services/visitorAn
 const abandonedCartService_1 = __importDefault(require("../services/abandonedCartService"));
 const getCustomers = async (req, res) => {
     try {
-        // Get all users with role 'user'
-        const users = await models_1.User.findAll({
-            where: {
-                role: 'user'
-            },
-            attributes: ['id', 'email', 'createdAt']
+        // Fetch unique customers from the Order table
+        const customers = await models_1.Order.findAll({
+            attributes: [
+                'userId',
+                'email',
+                [database_1.default.fn('COUNT', database_1.default.col('id')), 'totalOrders'], // Count total orders
+                [database_1.default.fn('SUM', database_1.default.col('amount')), 'totalSpent'], // Sum total spent
+                [database_1.default.fn('MAX', database_1.default.col('createdAt')), 'lastOrderDate'], // Get the last order date
+            ],
+            group: ['userId', 'email'], // Group by userId and email
+            order: [[database_1.default.fn('MAX', database_1.default.col('createdAt')), 'DESC']], // Sort by last order date
         });
-        // For each user, get their order information
-        const customersWithOrders = await Promise.all(users.map(async (user) => {
-            // Get total orders for this user
-            const totalOrders = await models_1.Order.count({
-                where: { userId: user.id }
-            });
-            // Get total spent by this user
-            const totalSpent = await models_1.Order.sum('amount', {
-                where: { userId: user.id }
-            }) || 0;
-            // Get the last order date
-            const lastOrder = await models_1.Order.findOne({
-                where: { userId: user.id },
-                order: [['createdAt', 'DESC']],
-                attributes: ['createdAt']
-            });
-            // Get crypto wallets used by this user
-            const cryptoWallets = {};
-            const distinctCryptoOrders = await models_1.Order.findAll({
-                where: { userId: user.id },
-                attributes: [
-                    'payment_currency',
-                    'payment_address',
-                    [database_1.default.fn('MAX', database_1.default.col('createdAt')), 'latest_use']
-                ],
-                group: ['payment_currency', 'payment_address'],
-                order: [[database_1.default.literal('latest_use'), 'DESC']]
-            });
-            // Add each unique crypto wallet to the user's wallet collection
-            distinctCryptoOrders.forEach((order) => {
-                if (order.payment_currency && order.payment_address) {
-                    cryptoWallets[order.payment_currency] = order.payment_address;
-                }
-            });
-            // Get the last order date as a string
-            const lastOrderDate = lastOrder ?
-                lastOrder.createdAt.toISOString() :
-                user.createdAt.toISOString();
-            return {
-                id: `CUST-${user.id}`,
-                email: user.email,
-                totalOrders,
-                totalSpent: parseFloat(totalSpent.toString()),
-                lastOrderDate,
-                cryptoWallets: Object.keys(cryptoWallets).length > 0 ? cryptoWallets : undefined
-            };
+        // Map the results into a customer-friendly format
+        const customerData = customers.map((customer) => ({
+            userId: customer.userId,
+            email: customer.email,
+            totalOrders: parseInt(customer.dataValues.totalOrders, 10),
+            totalSpent: parseFloat(customer.dataValues.totalSpent || 0),
+            lastOrderDate: customer.dataValues.lastOrderDate,
         }));
-        return res.status(200).json(customersWithOrders);
+        return res.status(200).json(customerData);
     }
     catch (error) {
-        console.error("Error fetching customers:", error);
+        console.error('Error fetching customers:', error);
         return res.status(500).json({
             message: 'Error fetching customers data',
-            error: process.env.NODE_ENV === 'development' ? error : undefined
+            error: process.env.NODE_ENV === 'development' ? error : undefined,
         });
     }
 };

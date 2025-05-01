@@ -51,7 +51,8 @@ export default function SettingsPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://138.197.21.102:5002/auth/check-auth', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://138.197.21.102:5002'
+      const response = await axios.get(`${apiUrl}/auth/check-auth`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -119,68 +120,64 @@ export default function SettingsPage() {
       setLoading(false);
     }
   };
+const handlePasswordChange = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setError(null);
+  setSuccess(null);
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-    
-    // Validate passwords
-    if (securitySettings.newPassword !== securitySettings.confirmPassword) {
-      setError('New passwords do not match');
-      setLoading(false);
-      return;
-    }
-    
-    if (securitySettings.newPassword.length < 8) {
-      setError('Password must be at least 8 characters long');
-      setLoading(false);
-      return;
-    }
-    
-    try {
-      const token = localStorage.getItem('token');
-      await axios.put('http://138.197.21.102:5000/admin/change-password', {
-        currentPassword: securitySettings.currentPassword,
-        newPassword: securitySettings.newPassword
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      setSuccess('Password changed successfully!');
-      setSecuritySettings(prevSettings => ({
-        ...prevSettings,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      }));
-    } catch (error) {
-      console.error('Error changing password:', error);
-      
-      // Check if it's an authentication error
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        setError('Current password is incorrect');
+  if (securitySettings.newPassword !== securitySettings.confirmPassword) {
+    setError('New passwords do not match');
+    setLoading(false);
+    return;
+  }
+
+  if (securitySettings.newPassword.length < 8) {
+    setError('Password must be at least 8 characters long');
+    setLoading(false);
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem('token'); // Retrieve the JWT token
+    const resetToken = localStorage.getItem('resetToken'); // Retrieve the reset token
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://138.197.21.102:5002';
+
+    await axios.post(`${apiUrl}/auth/reset-password`, {
+      token: resetToken, // Include the reset token in the request
+      newPassword: securitySettings.newPassword,
+    }, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // Include the JWT token
+      },
+    });
+
+    setSuccess('Password changed successfully!');
+    setSecuritySettings((prevSettings) => ({
+      ...prevSettings,
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    }));
+  } catch (error) {
+    console.error('Error changing password:', error);
+
+    if (axios.isAxiosError(error)) {
+      if (error.response?.status === 400) {
+        setError('Invalid or expired token. Please try again.');
+      } else if (error.response?.status === 401) {
+        setError('Current password is incorrect.');
       } else {
-        setError('Failed to change password. Please try again.');
+        setError(error.response?.data?.message || 'Failed to change password. Please try again.');
       }
-      
-      // For demo purposes, show success anyway
-      setSuccess('Password changed successfully! (Demo mode)');
-      setSecuritySettings(prevSettings => ({
-        ...prevSettings,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      }));
-    } finally {
-      setLoading(false);
+    } else {
+      setError('An unexpected error occurred. Please try again.');
     }
-  };
-
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Admin Settings</h1>

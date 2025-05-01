@@ -14,7 +14,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const PUBLIC_ROUTES = ['/','/admin/login', '/admin/reset-password','/contact'];
+const PUBLIC_ROUTES = ['/','/admin/login', '/auth/reset-password','/contact'];
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<any>(null);
@@ -79,8 +79,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return response.data;
       }
 
-      if (response.data && response.data.token) {
+      if (response.data && response.data.token ) {
         localStorage?.setItem('token', response.data.token);
+         localStorage?.setItem('resetToken', response.data.resetToken);
         setUser(response.data.user || { email });
         toast.success('Login successful!');
         router.push('/admin');

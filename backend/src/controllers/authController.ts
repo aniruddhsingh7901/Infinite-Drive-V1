@@ -40,36 +40,78 @@ export const register = async (req: Request, res: Response, next: NextFunction):
     }
 };
 
+// export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+//     try {
+//         const { email, passwords, otp } = req.body;
+//         console.log(req.body, "------------------")
+//         const user = await User.findOne({ where: { email } });
+//         console.log("🚀 ~ login ~ user:", user)
+
+//         if (!user) {
+//             res.status(401).json({ message: 'Invalid email or password' });
+//             return;
+//         }
+
+//         // First verify password
+//         if (!(await bcrypt.compare(passwords, user.password))) {
+//             res.status(401).json({ message: 'Invalid email or password' });
+//             return;
+//         }
+
+//         // Generate JWT token
+//         const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET!, { expiresIn: '6h' });
+//         console.log("🚀 ~ login ~ token:", token)
+
+//         res.json({
+//             message: 'Login successful',
+//             token,
+//             user: {
+//                 id: user.id,
+//                 email: user.email,
+//                 role: user.role
+//             }
+//         });
+//     } catch (error) {
+//         next(error);
+//     }
+// };
+
 export const login = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-        const { email, passwords, otp } = req.body;
-        console.log(req.body, "------------------")
+        const { email, passwords } = req.body;
         const user = await User.findOne({ where: { email } });
-        console.log("🚀 ~ login ~ user:", user)
 
-        if (!user) {
-            res.status(401).json({ message: 'Invalid email or password' });
-            return;
-        }
-
-        // First verify password
-        if (!(await bcrypt.compare(passwords, user.password))) {
+        if (!user || !(await bcrypt.compare(passwords, user.password))) {
             res.status(401).json({ message: 'Invalid email or password' });
             return;
         }
 
         // Generate JWT token
         const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET!, { expiresIn: '6h' });
-        console.log("🚀 ~ login ~ token:", token)
+
+        // Generate a reset token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 1);
+
+        // Save the reset token to the AuthToken table
+        await AuthToken.create({
+            userId: user.id,
+            token: resetToken,
+            type: TokenType.PASSWORD_RESET,
+            isUsed: false,
+            expiresAt,
+        });
 
         res.json({
             message: 'Login successful',
             token,
+            resetToken, // Return the reset token to the frontend
             user: {
                 id: user.id,
                 email: user.email,
-                role: user.role
-            }
+                role: user.role,
+            },
         });
     } catch (error) {
         next(error);
@@ -139,7 +181,7 @@ export const forgotPassword = async (req: Request, res: Response, next: NextFunc
 export const resetPassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         const { token, newPassword } = req.body;
-
+        console.log("🚀 ~ resetPassword ~ req.body:", req.body)
         if (!token || !newPassword) {
             res.status(400).json({ message: 'Token and new password are required' });
             return;
